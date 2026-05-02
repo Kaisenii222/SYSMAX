@@ -1,0 +1,2462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>SYS//MAX</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════
+   ROOT & RESET
+════════════════════════════════════════ */
+:root{
+  --primary:#00d4aa;--pg:rgba(0,212,170,.3);--pd:rgba(0,212,170,.1);
+  --gold:#f59e0b;--gg:rgba(245,158,11,.3);--danger:#ef4444;
+  --bg:#06090f;--bg2:#0d1421;--card:rgba(13,20,33,.95);
+  --border:rgba(255,255,255,.08);--text:#cbd5e1;--bright:#f1f5f9;
+  --muted:#475569;--dim:#64748b;
+  --cc:#00d4aa;--cg:rgba(0,212,170,.3);
+  --fs:'Orbitron',monospace;--fb:'Rajdhani',sans-serif;--fm:'Share Tech Mono',monospace;
+  --nav:70px;--side:230px;--ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--fb);background:var(--bg);color:var(--text);display:flex;justify-content:center}
+
+/* ── Moving scanlines ── */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9100;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.09) 2px,rgba(0,0,0,.09) 3px);
+  animation:scanMove 20s linear infinite}
+@keyframes scanMove{0%{background-position:0 0}100%{background-position:0 60px}}
+
+/* ── Vignette ── */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  box-shadow:inset 0 0 200px rgba(0,0,0,.92),inset 0 0 80px rgba(0,0,0,.7)}
+
+/* ── Scan flicker on key numbers ── */
+.flicker{animation:scanFlicker 4s step-end infinite}
+@keyframes scanFlicker{0%,91%,100%{opacity:1}92%{opacity:.35}94%{opacity:.9}96%{opacity:.2}98%{opacity:.85}}
+
+/* ── Particle canvas ── */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+#trail-canvas{position:fixed;inset:0;z-index:9200;pointer-events:none}
+
+/* ── Mist layers ── */
+#mist-wrap{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.mist{position:absolute;width:200%;height:200%;
+  background:radial-gradient(ellipse 55% 35% at 30% 50%,rgba(0,212,170,.04) 0%,transparent 70%);
+  animation:mistDrift linear infinite}
+.mist:nth-child(1){animation-duration:45s;top:-50%;left:-20%}
+.mist:nth-child(2){animation-duration:70s;top:-30%;left:-60%;animation-delay:-22s;opacity:.6}
+.mist:nth-child(3){animation-duration:55s;top:-70%;left:10%;animation-delay:-38s;opacity:.4}
+@keyframes mistDrift{0%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(6%,3%) rotate(.8deg)}100%{transform:translate(0,0) rotate(0deg)}}
+
+/* ── Character theme classes ── */
+body.theme-oni{--cc:#ef4444;--cg:rgba(239,68,68,.35);--pd:rgba(239,68,68,.1)}
+body.theme-azure{--cc:#06b6d4;--cg:rgba(6,182,212,.35);--pd:rgba(6,182,212,.1)}
+body.theme-ember{--cc:#d97706;--cg:rgba(217,119,6,.35);--pd:rgba(217,119,6,.1)}
+body.theme-fire{--cc:#f97316;--cg:rgba(249,115,22,.35);--pd:rgba(249,115,22,.1)}
+body.theme-violet{--cc:#a855f7;--cg:rgba(168,85,247,.35);--pd:rgba(168,85,247,.1)}
+body.theme-steel{--cc:#94a3b8;--cg:rgba(148,163,184,.35);--pd:rgba(148,163,184,.1)}
+body.theme-cobalt{--cc:#3b82f6;--cg:rgba(59,130,246,.35);--pd:rgba(59,130,246,.1)}
+body.theme-lime{--cc:#84cc16;--cg:rgba(132,204,22,.35);--pd:rgba(132,204,22,.1)}
+body.theme-green{--cc:#22c55e;--cg:rgba(34,197,94,.35);--pd:rgba(34,197,94,.1)}
+body.theme-purple{--cc:#8b5cf6;--cg:rgba(139,92,246,.35);--pd:rgba(139,92,246,.1)}
+
+/* ── Panel title decoration ── */
+.panel-head{font-family:var(--fs);font-size:.6rem;color:var(--bright);margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;letter-spacing:1px}
+.panel-head::before{content:'■';color:var(--cc);font-size:.5rem;flex-shrink:0}
+.panel-head::after{content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,rgba(255,255,255,.1),transparent)}
+
+/* ── Warning blink ── */
+.warn-blink{animation:warnBlink 1.6s ease-in-out infinite}
+@keyframes warnBlink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Exercise tooltip ── */
+#ex-tip{
+  position:fixed;z-index:8000;max-width:300px;min-width:220px;
+  background:rgba(4,7,14,.97);border:1px solid var(--cc);border-radius:12px;
+  padding:14px 16px;pointer-events:none;display:none;
+  box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 0 1px rgba(0,212,170,.12);
+  backdrop-filter:blur(20px)
+}
+#ex-tip.vis{display:block}
+.etip-name{font-family:var(--fs);font-size:.65rem;color:var(--bright);margin-bottom:6px;letter-spacing:1px}
+.etip-muscles{font-size:.75rem;color:var(--cc);margin-bottom:6px;font-family:var(--fm)}
+.etip-why{font-size:.78rem;color:var(--text);line-height:1.6;margin-bottom:8px}
+.etip-form{font-size:.74rem;color:var(--dim);font-style:italic;padding:6px 10px;
+  background:rgba(255,255,255,.03);border-left:2px solid var(--cc);border-radius:0 4px 4px 0}
+.etip-char{font-family:var(--fs);font-size:.52rem;letter-spacing:2px;color:var(--cc);
+  margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,.06);opacity:.7}
+
+/* ── Advanced glitch ── */
+@keyframes glitchClip1{0%,100%{clip-path:inset(0 0 96% 0)}25%{clip-path:inset(20% 0 55% 0)}50%{clip-path:inset(55% 0 28% 0)}75%{clip-path:inset(72% 0 8% 0)}}
+@keyframes glitchClip2{0%,100%{clip-path:inset(82% 0 4% 0)}25%{clip-path:inset(42% 0 44% 0)}50%{clip-path:inset(12% 0 72% 0)}75%{clip-path:inset(62% 0 18% 0)}}
+@keyframes glitchShift{0%,100%{transform:translateX(0)}33%{transform:translateX(-5px)}66%{transform:translateX(5px)}}
+.glitch-adv{position:relative}
+.glitch-adv::before,.glitch-adv::after{content:attr(data-text);position:absolute;top:0;left:0;width:100%;height:100%;background:inherit;pointer-events:none}
+.glitch-adv::before{color:#0ff;text-shadow:none;opacity:0;animation:glitchClip1 .15s step-end infinite,glitchShift .15s step-end infinite}
+.glitch-adv::after{color:#f0f;text-shadow:none;opacity:0;animation:glitchClip2 .15s step-end infinite,glitchShift .15s step-end infinite}
+.glitch-adv.firing::before,.glitch-adv.firing::after{opacity:.65}
+
+/* ── Violent shake ── */
+@keyframes vShake{
+  0%{transform:translate(0,0) rotate(0)}
+  10%{transform:translate(-3px,1px) rotate(-1deg)}
+  20%{transform:translate(4px,-2px) rotate(1deg)}
+  30%{transform:translate(-4px,2px) rotate(-.5deg)}
+  40%{transform:translate(5px,-1px) rotate(1.5deg)}
+  50%{transform:translate(-3px,3px) rotate(-1deg)}
+  60%{transform:translate(4px,-2px) rotate(.8deg)}
+  70%{transform:translate(-5px,1px) rotate(-1.5deg)}
+  80%{transform:translate(3px,2px) rotate(.5deg)}
+  90%{transform:translate(-2px,-2px) rotate(-.5deg)}
+  100%{transform:translate(0,0) rotate(0)}
+}
+body.shaking #app{animation:vShake .55s var(--ease)}
+
+/* ── Scroll unfurl for char vibe quote ── */
+.unfurl-wrap{position:relative}
+.unfurl-edge-t,.unfurl-edge-b{position:absolute;left:0;right:0;height:1.5px;pointer-events:none;z-index:2;
+  background:linear-gradient(90deg,transparent 0%,var(--cc) 30%,var(--cc) 70%,transparent 100%);
+  transform:scaleX(0);transform-origin:center;transition:transform .6s cubic-bezier(.22,1,.36,1)}
+.unfurl-edge-l,.unfurl-edge-r{position:absolute;top:0;width:1px;pointer-events:none;z-index:2;
+  background:linear-gradient(180deg,transparent 0%,var(--cc) 20%,var(--cc) 80%,transparent 100%);
+  height:0;transition:height .35s ease}
+.unfurl-edge-t{top:0}.unfurl-edge-b{bottom:0}
+.unfurl-edge-l{left:0}.unfurl-edge-r{right:0}
+.unfurl-wrap.sealed .unfurl-edge-t,.unfurl-wrap.sealed .unfurl-edge-b{transform:scaleX(1)}
+.unfurl-wrap.sealed .unfurl-edge-l,.unfurl-wrap.sealed .unfurl-edge-r{height:100%}
+
+/* orbs — kept for ambient warm glow */
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;animation:odrift 25s ease-in-out infinite alternate;z-index:2}
+.o1{width:500px;height:500px;background:rgba(0,212,170,.04);top:-20%;left:-20%}
+.o2{width:400px;height:400px;background:rgba(99,102,241,.03);bottom:-20%;right:-20%;animation-delay:-10s}
+.o3{width:250px;height:250px;background:rgba(245,158,11,.025);top:45%;left:35%;animation-delay:-5s;animation-duration:20s}
+@keyframes odrift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(60px,40px) scale(1.15)}}
+.bgrid{position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,170,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,170,.02) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;z-index:2}
+
+/* ════════════════════════════════════════
+   APP SHELL — RESPONSIVE
+════════════════════════════════════════ */
+#app{width:100%;height:100vh;height:100dvh;display:flex;overflow:hidden;max-width:1400px;margin:0 auto}
+
+/* SIDEBAR — hidden on mobile, shown on desktop */
+.sidebar{
+  width:var(--side);flex-shrink:0;
+  background:rgba(6,9,15,.98);border-right:1px solid var(--border);
+  padding:28px 14px 20px;display:none;flex-direction:column;gap:4px;z-index:50
+}
+.sb-logo{font-family:var(--fs);font-size:1rem;font-weight:900;letter-spacing:3px;
+  background:linear-gradient(135deg,#fff,var(--cc));-webkit-background-clip:text;color:transparent;
+  margin-bottom:24px;padding-left:10px}
+.sb-btn{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;
+  border:none;background:transparent;color:var(--muted);font-family:var(--fs);
+  font-size:.6rem;letter-spacing:1px;cursor:pointer;width:100%;text-align:left;
+  transition:all .2s;position:relative
+}
+.sb-btn:hover{background:rgba(255,255,255,.04);color:var(--bright)}
+.sb-btn.active{background:rgba(0,212,170,.08);color:var(--cc);border:1px solid rgba(0,212,170,.2)}
+.sb-btn .si{font-size:1.1rem;width:22px;text-align:center;flex-shrink:0}
+.sb-player{margin-top:auto;padding:12px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid var(--border)}
+.sb-name{font-family:var(--fs);font-size:.68rem;color:var(--bright);margin-bottom:3px}
+.sb-sub{font-size:.65rem;color:var(--muted)}
+
+@media(min-width:768px){
+  .sidebar{display:flex}
+  .bottom-nav{display:none!important}
+  .sc-content{padding-bottom:24px!important}
+}
+
+/* MAIN AREA */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;min-width:0}
+
+/* ════════════════════════════════════════
+   SCREENS
+════════════════════════════════════════ */
+.screen-wrap{flex:1;position:relative;overflow:hidden}
+.screen{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transform:translateY(10px);
+  transition:opacity .35s var(--ease),transform .35s var(--ease)
+}
+.screen.active{opacity:1;pointer-events:all;transform:translateY(0)}
+
+/* generic scrollable content block */
+.sc-content{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:20px 20px calc(var(--nav) + 20px);
+  scrollbar-width:thin;scrollbar-color:rgba(0,212,170,.2) transparent
+}
+.sc-content::-webkit-scrollbar{width:3px}
+.sc-content::-webkit-scrollbar-thumb{background:rgba(0,212,170,.2);border-radius:3px}
+
+/* ════════════════════════════════════════
+   TYPOGRAPHY
+════════════════════════════════════════ */
+.sys{font-family:var(--fs);color:var(--bright)}
+.lbl{font-family:var(--fs);font-size:.58rem;letter-spacing:3px;color:var(--primary);text-transform:uppercase}
+.mono{font-family:var(--fm)}
+
+/* ════════════════════════════════════════
+   GLASS CARD
+════════════════════════════════════════ */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
+
+/* ════════════════════════════════════════
+   BUTTONS
+════════════════════════════════════════ */
+.btn{
+  width:100%;padding:14px 20px;border-radius:11px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--bright);font-family:var(--fs);
+  font-size:.72rem;font-weight:600;letter-spacing:1px;cursor:pointer;
+  transition:all .22s var(--ease)
+}
+.btn:hover{border-color:rgba(255,255,255,.18);transform:translateY(-1px)}
+.btn:active{transform:scale(.98)}
+.btn-p{background:var(--cc);color:#000;border:none;box-shadow:0 0 20px var(--cg)}
+.btn-p:hover{box-shadow:0 0 30px var(--cg)}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(239,68,68,.3)}
+.btn-sm{padding:9px 14px;font-size:.62rem;border-radius:8px;width:auto}
+
+/* ════════════════════════════════════════
+   FORM INPUTS
+════════════════════════════════════════ */
+input[type="text"],input[type="number"],select,textarea{
+  width:100%;padding:13px 16px;background:rgba(0,0,0,.3);color:var(--bright);
+  border:1px solid var(--border);border-radius:10px;font-family:var(--fb);
+  font-size:1rem;outline:none;transition:border .25s,box-shadow .25s;-webkit-appearance:none
+}
+input:focus,select:focus{border-color:var(--cc);box-shadow:0 0 0 3px var(--pd)}
+select option{background:#1e293b;color:var(--bright)}
+.fg{margin-bottom:15px}
+.fl{display:block;font-family:var(--fs);font-size:.56rem;letter-spacing:2px;color:var(--muted);margin-bottom:7px;text-transform:uppercase}
+
+/* ════════════════════════════════════════
+   PROGRESS BAR
+════════════════════════════════════════ */
+.pt{width:100%;height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cc),color-mix(in srgb,var(--cc) 70%,#fff));box-shadow:0 0 8px var(--cg);transition:width .6s var(--ease)}
+.pf-gold{background:linear-gradient(90deg,var(--gold),#fcd34d);box-shadow:0 0 8px var(--gg)}
+
+/* ════════════════════════════════════════
+   KEYFRAMES
+════════════════════════════════════════ */
+@keyframes glitch{0%,88%,100%{transform:translate(0);clip-path:none}90%{transform:translate(-2px,1px);clip-path:polygon(0 25%,100% 25%,100% 45%,0 45%);color:#ef4444}93%{transform:translate(2px,-1px);clip-path:polygon(0 65%,100% 65%,100% 85%,0 85%);color:#06b6d4}96%{transform:translate(0)}}
+@keyframes pglow{0%,100%{box-shadow:0 0 10px var(--cg)}50%{box-shadow:0 0 25px var(--cg),0 0 50px rgba(0,212,170,.12)}}
+@keyframes fadeup{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes rshine{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes reelslot{0%{transform:translateY(0%)}100%{transform:translateY(-90%)}}
+
+/* ════════════════════════════════════════
+   BOOT SCREEN
+════════════════════════════════════════ */
+#sc-boot{background:var(--bg);justify-content:center;align-items:center;z-index:100}
+.boot-box{width:90%;max-width:440px;padding:30px 24px}
+.boot-logo{font-family:var(--fs);font-size:2.8rem;font-weight:900;
+  background:linear-gradient(135deg,#fff 0%,var(--primary) 60%);-webkit-background-clip:text;
+  color:transparent;animation:glitch 8s infinite;margin-bottom:4px}
+.boot-sub{font-family:var(--fm);font-size:.72rem;color:var(--muted);margin-bottom:28px}
+.boot-line{font-family:var(--fm);font-size:.75rem;color:var(--primary);margin:5px 0;opacity:0;transition:opacity .3s}
+.boot-line.vis{opacity:1}
+.boot-line.ok::after{content:' [OK]';color:#22c55e}
+.cur{display:inline-block;width:8px;height:13px;background:var(--primary);margin-left:3px;animation:blink 1s infinite;vertical-align:middle}
+.boot-bar{width:100%;height:3px;background:rgba(255,255,255,.08);border-radius:2px;margin:18px 0 8px;overflow:hidden}
+.boot-fill{height:100%;background:var(--primary);width:0%;border-radius:2px;box-shadow:0 0 8px var(--pg);transition:width 2.4s ease}
+
+/* ════════════════════════════════════════
+   ONBOARD SCREEN
+════════════════════════════════════════ */
+#sc-onboard .sc-content{display:flex;flex-direction:column;justify-content:center;min-height:100%}
+.ob-head h1{font-family:var(--fs);font-size:2rem;font-weight:900;
+  background:linear-gradient(135deg,#fff,var(--cc));-webkit-background-clip:text;
+  color:transparent;animation:glitch 10s infinite}
+.id-preview{font-family:var(--fm);font-size:.8rem;color:var(--cc);min-height:20px;margin-top:6px;transition:all .3s}
+.bmi-chip{padding:12px 16px;border-radius:9px;background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.2);
+  font-family:var(--fs);font-size:.72rem;color:var(--cc);text-align:center;display:none;margin-top:10px}
+
+/* ════════════════════════════════════════
+   CAROUSEL CHARACTER SELECT
+════════════════════════════════════════ */
+.carousel-wrap{margin-top:16px;position:relative}
+.car-vp{width:100%;height:420px;perspective:1200px;perspective-origin:50% 50%;position:relative;overflow:hidden}
+@media(min-width:768px){.car-vp{height:460px}}
+.c-panel{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  padding:0 12px;display:flex;flex-direction:column;
+  transition:all .5s var(--ease);transform-origin:center center;
+  pointer-events:none;user-select:none;will-change:transform
+}
+.c-panel.curr{transform:translateX(0) rotateY(0deg) scale(1);opacity:1;pointer-events:all;z-index:3}
+.c-panel.prev{transform:translateX(-58%) rotateY(38deg) scale(.82);opacity:.45;pointer-events:all;cursor:pointer;z-index:2}
+.c-panel.next{transform:translateX(58%) rotateY(-38deg) scale(.82);opacity:.45;pointer-events:all;cursor:pointer;z-index:2}
+.c-panel.far-l{transform:translateX(-105%) rotateY(55deg) scale(.6);opacity:0;z-index:1}
+.c-panel.far-r{transform:translateX(105%) rotateY(-55deg) scale(.6);opacity:0;z-index:1}
+.c-panel.hidden-pos{transform:translateX(130%) scale(.5);opacity:0;z-index:0}
+
+.cp-card{
+  background:var(--card);border:1px solid var(--border);border-radius:20px;
+  flex:1;padding:22px 18px;position:relative;overflow:hidden;display:flex;flex-direction:column
+}
+.cp-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,var(--cg),transparent 65%);pointer-events:none}
+.cp-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
+.cp-av{
+  width:68px;height:68px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--fs);font-size:1.5rem;font-weight:900;color:#000;flex-shrink:0;position:relative
+}
+.cp-av-ring{position:absolute;inset:-3px;border-radius:17px;border:2px solid var(--cc);opacity:.6;animation:pglow 3s infinite}
+.cp-name{font-family:var(--fs);font-size:1.15rem;font-weight:900;color:var(--bright);margin-bottom:3px}
+.cp-title{font-family:var(--fs);font-size:.6rem;letter-spacing:2px;color:var(--cc)}
+.cp-tag{font-size:.7rem;color:var(--muted);margin-top:4px}
+.cp-vibe{font-style:italic;font-size:.82rem;color:var(--dim);margin-bottom:11px;padding-left:12px;border-left:2px solid var(--cc);line-height:1.5}
+.cp-body{font-size:.8rem;color:var(--text);line-height:1.6;flex:1;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 65%,transparent)}
+.cp-pills{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.pill{padding:3px 9px;border-radius:20px;border:1px solid var(--cg);font-family:var(--fs);font-size:.52rem;letter-spacing:1px;color:var(--cc);background:var(--pd)}
+
+.car-ctrl{display:flex;justify-content:space-between;align-items:center;padding:12px 12px 0}
+.car-arr{
+  background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:9px 16px;color:var(--text);font-size:1rem;cursor:pointer;
+  font-family:var(--fs);font-size:.65rem;transition:all .2s
+}
+.car-arr:hover{border-color:var(--cc);color:var(--cc)}
+.dots{display:flex;gap:5px;align-items:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:all .3s;cursor:pointer}
+.dot.on{background:var(--cc);box-shadow:0 0 6px var(--cg);width:18px;border-radius:3px}
+.car-sel{margin-top:12px;font-family:var(--fs);font-size:.68rem;letter-spacing:2px}
+
+/* ════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════ */
+.dash-top{padding:20px 20px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.rank-gem{
+  padding:8px 14px;border-radius:10px;font-family:var(--fs);font-weight:900;font-size:1.4rem;
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);color:var(--gold);
+  cursor:pointer;text-align:center;animation:pglow 3s infinite;--cg:var(--gg)
+}
+.rg-sub{display:block;font-size:.48rem;letter-spacing:2px;color:rgba(245,158,11,.6)}
+.srow{display:flex;gap:9px;margin:14px 0}
+.sc{flex:1;padding:11px;background:var(--card);border:1px solid var(--border);border-radius:11px;text-align:center}
+.sv{font-family:var(--fs);font-size:1.2rem;font-weight:700;color:var(--bright)}
+.sl{font-family:var(--fs);font-size:.5rem;letter-spacing:2px;color:var(--muted);margin-top:2px}
+.qpanel{margin-bottom:14px;padding:18px;background:var(--card);border:1px solid var(--border);border-left:3px solid var(--cc);border-radius:14px}
+.phase-tag{display:inline-block;padding:3px 10px;background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);border-radius:20px;font-family:var(--fs);font-size:.5rem;letter-spacing:2px;color:var(--cc);margin-bottom:10px}
+.qname{font-size:1rem;font-weight:700;color:var(--bright);margin-bottom:5px}
+.qfocus{font-size:.82rem;color:var(--dim);line-height:1.5;margin-bottom:12px}
+.bmi-alert{padding:9px 14px;border-radius:9px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.07);font-size:.78rem;color:var(--gold);margin-bottom:12px}
+
+/* ════════════════════════════════════════
+   WORKOUT — FIXED SCROLL ARCHITECTURE
+   Header: flex-shrink:0
+   Content: flex:1 overflow-y:auto
+   Footer: flex-shrink:0
+════════════════════════════════════════ */
+#sc-workout{display:flex;flex-direction:column}
+.wo-head{
+  padding:16px 20px 14px;border-bottom:1px solid var(--border);
+  flex-shrink:0;background:var(--bg)
+}
+.wo-list{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:16px 20px;
+  scrollbar-width:thin;scrollbar-color:rgba(0,212,170,.2) transparent
+}
+.wo-list::-webkit-scrollbar{width:3px}
+.wo-list::-webkit-scrollbar-thumb{background:rgba(0,212,170,.2);border-radius:3px}
+.wo-foot{
+  flex-shrink:0;padding:14px 20px;border-top:1px solid var(--border);
+  background:var(--bg)
+}
+/* account for bottom nav on mobile */
+@media(max-width:767px){.wo-foot{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}}
+
+/* ════════════════════════════════════════
+   TRAVEL MODE
+════════════════════════════════════════ */
+#travel-modal{position:fixed;inset:0;z-index:9600;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(12px)}
+#travel-modal.open{display:flex}
+.travel-box{background:rgba(6,9,15,.98);border:1px solid var(--cc);border-radius:16px;padding:28px 24px;max-width:360px;width:90%;box-shadow:0 0 40px var(--cg);animation:fadeup .25s var(--ease)}
+.travel-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.travel-icon{font-size:1.8rem}
+.travel-title{font-family:var(--fs);font-size:.75rem;letter-spacing:2px;color:var(--cc)}
+.travel-sub{font-size:.82rem;color:var(--dim);line-height:1.6;margin-bottom:18px}
+.travel-days-label{font-family:var(--fs);font-size:.56rem;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.travel-day-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-bottom:20px}
+.tday-btn{padding:10px 6px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--text);font-family:var(--fs);font-size:.62rem;cursor:pointer;transition:all .18s;text-align:center}
+.tday-btn:hover{border-color:var(--cc);color:var(--cc)}
+.tday-btn.sel{background:var(--cc);border-color:var(--cc);color:#000;font-weight:700}
+.travel-btns{display:flex;gap:10px}
+.travel-go{flex:1;padding:12px;border-radius:9px;border:none;background:var(--cc);color:#000;font-family:var(--fs);font-size:.68rem;letter-spacing:1px;cursor:pointer;font-weight:700;transition:all .2s}
+.travel-go:disabled{opacity:.3;cursor:not-allowed}
+.travel-cancel{flex:1;padding:12px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--fs);font-size:.68rem;letter-spacing:1px;cursor:pointer;transition:all .2s}
+.travel-cancel:hover{border-color:var(--bright);color:var(--bright)}
+
+/* Travel active banner */
+.travel-banner{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-radius:10px;margin-bottom:12px;
+  background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(0,0,0,.3));
+  border:1px solid rgba(245,158,11,.4);
+  animation:shimmerBanner 3s ease-in-out infinite
+}
+@keyframes shimmerBanner{0%,100%{border-color:rgba(245,158,11,.4)}50%{border-color:rgba(245,158,11,.7)}}
+.tb-left{display:flex;align-items:center;gap:10px}
+.tb-icon{font-size:1.2rem}
+.tb-text{font-family:var(--fs);font-size:.58rem;letter-spacing:1px;color:var(--gold)}
+.tb-days{font-size:.72rem;color:var(--dim);margin-top:2px}
+.tb-end{font-family:var(--fs);font-size:.56rem;letter-spacing:1px;color:var(--muted);cursor:pointer;padding:5px 10px;border:1px solid rgba(245,158,11,.3);border-radius:6px;background:transparent;transition:all .2s}
+.tb-end:hover{border-color:var(--danger);color:var(--danger)}
+
+/* ════════════════════════════════════════
+   CUSTOM CONFIRM MODAL
+════════════════════════════════════════ */
+#confirm-modal{position:fixed;inset:0;z-index:9600;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.82);backdrop-filter:blur(12px)}
+#confirm-modal.open{display:flex}
+.confirm-box{background:rgba(6,9,15,.98);border:1px solid var(--danger);border-radius:16px;padding:28px 24px;max-width:340px;width:90%;box-shadow:0 0 40px rgba(239,68,68,.2);animation:fadeup .25s var(--ease)}
+.confirm-title{font-family:var(--fs);font-size:.65rem;letter-spacing:3px;color:var(--danger);margin-bottom:10px}
+.confirm-msg{font-size:.9rem;color:var(--text);line-height:1.6;margin-bottom:20px}
+.confirm-btns{display:flex;gap:10px}
+.confirm-yes{flex:1;padding:12px;border-radius:9px;border:none;background:var(--danger);color:#fff;font-family:var(--fs);font-size:.68rem;letter-spacing:1px;cursor:pointer;transition:all .2s}
+.confirm-yes:hover{box-shadow:0 0 20px rgba(239,68,68,.4)}
+.confirm-no{flex:1;padding:12px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--fs);font-size:.68rem;letter-spacing:1px;cursor:pointer;transition:all .2s}
+.confirm-no:hover{border-color:var(--bright);color:var(--bright)}
+
+/* ════════════════════════════════════════
+   CUSTOM CURSOR
+════════════════════════════════════════ */
+*{cursor:none}
+#cur{width:5px;height:5px;background:var(--cc);border-radius:50%;position:fixed;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);transition:background .2s,transform .1s}
+#cur-ring{width:28px;height:28px;border:1.5px solid var(--cc);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;transform:translate(-50%,-50%) scale(1);transition:border-color .2s,transform .15s,opacity .2s;opacity:.7}
+@media(hover:none){#cur,#cur-ring{display:none}*{cursor:auto}}
+
+/* ════════════════════════════════════════
+   PAGE WIPE TRANSITION
+════════════════════════════════════════ */
+#page-wipe{position:fixed;inset:0;z-index:9800;pointer-events:none;background:var(--cc);transform:scaleX(0);transform-origin:left;transition:transform .22s var(--ease)}
+#page-wipe.out{transform:scaleX(1);transform-origin:left}
+#page-wipe.in{transform:scaleX(0);transform-origin:right;transition:transform .22s .05s var(--ease)}
+
+/* ════════════════════════════════════════
+   AMBIENT HUD LAYER
+════════════════════════════════════════ */
+#hud-layer{position:fixed;inset:0;z-index:5;opacity:0;transition:opacity 1.2s;pointer-events:none}
+.hud-corner{position:fixed;width:48px;height:48px}
+.hud-tl{top:12px;left:12px}.hud-tr{top:12px;right:12px}
+.hud-bl{bottom:32px;left:12px}.hud-br{bottom:32px;right:12px}
+.hud-coord{position:absolute;font-family:var(--fm);font-size:.4rem;letter-spacing:.15em;color:var(--cc);opacity:.22;white-space:nowrap}
+.hud-vert{position:absolute;font-family:var(--fm);font-size:.36rem;letter-spacing:.2em;color:var(--muted);opacity:.18;white-space:nowrap}
+.hud-gutter{position:fixed;top:50%;font-family:var(--fm);font-size:.35rem;letter-spacing:.18em;color:var(--muted);opacity:.12;white-space:nowrap;writing-mode:vertical-rl;text-orientation:mixed}
+.hud-gutter-l{left:4px;transform:translateY(-50%) rotate(180deg)}
+.hud-gutter-r{right:4px;transform:translateY(-50%)}
+#hud-ch{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px}
+.ch-h,.ch-v{position:absolute;background:var(--cc);opacity:.06}
+.ch-h{top:50%;left:0;right:0;height:.5px;transform:translateY(-50%)}
+.ch-v{left:50%;top:0;bottom:0;width:.5px;transform:translateX(-50%)}
+.ch-ring{position:absolute;inset:0;border:.5px solid var(--cc);border-radius:50%;opacity:.06}
+
+/* ════════════════════════════════════════
+   TICKER STREAM
+════════════════════════════════════════ */
+#ticker-wrap{position:fixed;bottom:0;left:0;right:0;height:26px;z-index:6;overflow:hidden;opacity:0;transition:opacity 1.2s;border-top:1px solid rgba(0,212,170,.07);pointer-events:none}
+#ticker-inner{display:flex;white-space:nowrap;animation:tickScroll 70s linear infinite;font-family:var(--fm);font-size:.42rem;letter-spacing:.15em;color:var(--cc);opacity:.22;line-height:26px}
+@keyframes tickScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ════════════════════════════════════════
+   NOVO COMPANION AVATAR
+════════════════════════════════════════ */
+#novo-avatar{
+  position:fixed;bottom:36px;right:24px;z-index:700;
+  width:64px;height:64px;opacity:0;
+  transition:opacity .8s var(--ease),transform .3s var(--ease);
+  pointer-events:all
+}
+#novo-avatar.vis{opacity:1}
+#novo-avatar.float{animation:novoFloat 5s ease-in-out infinite}
+@keyframes novoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes novoRing{to{transform:rotate(360deg)}}
+@keyframes novoCore{0%{r:12;opacity:.55}50%{r:18;opacity:0}100%{r:12;opacity:0}}
+
+#novo-bubble{
+  position:absolute;bottom:74px;right:0;
+  min-width:200px;max-width:280px;
+  background:rgba(6,9,15,.96);
+  backdrop-filter:blur(20px);
+  border:1px solid rgba(0,212,170,.35);
+  border-radius:12px 12px 2px 12px;
+  padding:12px 16px;
+  font-family:var(--fm);font-size:.6rem;letter-spacing:.05em;
+  color:var(--text);line-height:1.7;
+  opacity:0;pointer-events:none;
+  transition:opacity .35s var(--ease),transform .35s var(--ease);
+  transform:translateY(6px) scale(.97);
+  box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 0 1px rgba(0,212,170,.15);
+  text-align:left
+}
+#novo-bubble::after{content:'NOVO//';display:block;font-size:.5rem;letter-spacing:.2em;color:var(--cc);opacity:.7;margin-top:8px;border-top:1px solid rgba(0,212,170,.15);padding-top:6px}
+#novo-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+
+/* spring bounce on card entrances */
+@keyframes springIn{0%{opacity:0;transform:translateY(20px) scale(.92)}65%{opacity:1;transform:translateY(-4px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+
+.ex-item{margin-bottom:12px;padding:15px;background:var(--card);border:1px solid var(--border);border-radius:13px;transition:border-color .25s}
+.ex-item.ex-done{border-color:var(--cc);background:rgba(0,212,170,.04)}
+.ex-name{font-size:.98rem;font-weight:700;color:var(--bright);margin-bottom:5px}
+.ex-meta{font-family:var(--fs);font-size:.6rem;color:var(--muted);letter-spacing:1px;margin-bottom:6px}
+.ex-note{font-size:.78rem;color:var(--dim);font-style:italic;margin-bottom:9px}
+.bmi-note{font-size:.72rem;color:var(--gold);padding:4px 9px;background:rgba(245,158,11,.07);border-left:2px solid var(--gold);border-radius:4px;margin-bottom:9px}
+.sets-row{display:flex;gap:7px;flex-wrap:wrap}
+.sbox{
+  width:36px;height:36px;border-radius:7px;background:rgba(255,255,255,.04);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-family:var(--fs);font-size:.6rem;color:var(--muted);transition:all .18s
+}
+.sbox.done{background:var(--cc);border-color:var(--cc);color:#000;font-weight:700;font-size:.9rem}
+.btn-complete{
+  font-family:var(--fs);letter-spacing:2px;
+  background:var(--card);border:2px solid var(--border);color:var(--muted);
+  transition:all .3s var(--ease)
+}
+.btn-complete.rdy{
+  background:var(--cc);border-color:var(--cc);color:#000;
+  box-shadow:0 0 25px var(--cg);cursor:pointer;animation:pglow 2s infinite
+}
+.done-msg{font-family:var(--fm);font-size:.66rem;color:var(--cc);text-align:center;margin-top:8px}
+
+/* ════════════════════════════════════════
+   NUTRITION
+════════════════════════════════════════ */
+.ng{padding:18px;border-radius:14px;border:1px solid var(--cc);background:linear-gradient(145deg,rgba(0,0,0,.5),rgba(0,0,0,.2));box-shadow:0 0 20px var(--cg);margin-bottom:16px}
+.cal-n{font-family:var(--fs);font-size:2rem;font-weight:900;color:var(--cc);text-align:center}
+.cal-u{font-family:var(--fs);font-size:.58rem;letter-spacing:2px;color:var(--muted);text-align:center;margin-bottom:12px}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mc{text-align:center;padding:9px;background:rgba(0,0,0,.3);border-radius:9px;border:1px solid var(--border)}
+.mv{font-family:var(--fs);font-size:.82rem;color:var(--bright)}
+.ml{font-size:.65rem;color:var(--muted)}
+.meal{padding:12px 15px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:9px;display:flex;gap:13px;align-items:flex-start}
+.mt{font-family:var(--fs);font-size:.56rem;letter-spacing:2px;color:var(--cc);white-space:nowrap;min-width:75px;margin-top:2px}
+.mf{font-size:.86rem;color:var(--text);line-height:1.55}
+.mb{font-size:.7rem;color:var(--gold);margin-top:3px}
+.avoid{padding:13px;border-radius:11px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);margin-top:4px}
+.av-lbl{font-family:var(--fs);font-size:.56rem;letter-spacing:2px;color:var(--danger);margin-bottom:6px}
+.cheat-banner{padding:10px;border-radius:9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);text-align:center;font-family:var(--fs);font-size:.65rem;color:var(--gold);margin-bottom:12px;letter-spacing:2px}
+
+/* ════════════════════════════════════════
+   HISTORY
+════════════════════════════════════════ */
+.hempty{text-align:center;padding:60px 20px;color:var(--muted)}
+.hentry{display:flex;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:9px;animation:fadeup .3s var(--ease) both}
+.hdot{width:8px;height:8px;border-radius:50%;background:var(--cc);margin-top:5px;flex-shrink:0;box-shadow:0 0 5px var(--cg)}
+.hname{font-size:.92rem;font-weight:700;color:var(--bright);margin-bottom:3px}
+.hmeta{font-size:.76rem;color:var(--dim)}
+.hxp{font-family:var(--fs);font-size:.7rem;color:var(--cc);margin-left:auto;white-space:nowrap}
+
+/* ════════════════════════════════════════
+   STORE
+════════════════════════════════════════ */
+.sbal{padding:13px 16px;border-radius:11px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.28);display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.sbal-v{font-family:var(--fs);font-size:1.35rem;color:var(--gold);font-weight:700}
+.sit{display:flex;gap:12px;align-items:center;padding:13px;background:var(--card);border:1px solid var(--border);border-radius:13px;margin-bottom:9px}
+.siticon{font-size:1.6rem;flex-shrink:0}
+.sinfo{flex:1;min-width:0}
+.sname{font-size:.92rem;font-weight:700;color:var(--bright);margin-bottom:2px}
+.sdesc{font-size:.76rem;color:var(--dim)}
+.sowned{font-family:var(--fs);font-size:.56rem;color:var(--cc);letter-spacing:1px;margin-top:3px}
+.bbtn{padding:8px 13px;border-radius:8px;background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.25);color:var(--cc);font-family:var(--fs);font-size:.6rem;cursor:pointer;transition:all .18s;white-space:nowrap;flex-shrink:0}
+.bbtn:hover:not(:disabled){background:var(--cc);color:#000}
+.bbtn:disabled{opacity:.3;cursor:not-allowed}
+.bbtn.own{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.28);color:var(--gold);cursor:default}
+.invitem{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:rgba(0,0,0,.2);border-radius:9px;margin-bottom:7px;border:1px solid var(--border)}
+.ubtn{padding:6px 12px;border-radius:6px;background:rgba(0,212,170,.07);border:1px solid rgba(0,212,170,.25);color:var(--cc);font-family:var(--fs);font-size:.58rem;cursor:pointer}
+.ubtn:hover{background:var(--cc);color:#000}
+
+/* ── GACHA ── */
+.gacha-box{
+  padding:20px;border-radius:16px;margin-bottom:20px;text-align:center;
+  background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(99,102,241,.04),rgba(0,0,0,.5));
+  border:1px solid rgba(245,158,11,.28)
+}
+.gacha-ttl{font-family:var(--fs);font-size:.68rem;letter-spacing:3px;color:var(--gold);margin-bottom:4px}
+.gacha-sub{font-size:.8rem;color:var(--dim);margin-bottom:16px}
+.reels{display:flex;justify-content:center;gap:10px;margin:16px 0}
+.reel-wrap{
+  width:68px;height:80px;border-radius:10px;overflow:hidden;position:relative;
+  background:rgba(0,0,0,.55);border:1px solid rgba(245,158,11,.28)
+}
+.reel-wrap::before,.reel-wrap::after{content:'';position:absolute;left:0;right:0;height:22px;z-index:2;pointer-events:none}
+.reel-wrap::before{top:0;background:linear-gradient(to bottom,rgba(0,0,0,.85),transparent)}
+.reel-wrap::after{bottom:0;background:linear-gradient(to top,rgba(0,0,0,.85),transparent)}
+/* highlight center stripe */
+.reel-wrap .stripe{position:absolute;top:50%;left:0;right:0;height:80px;transform:translateY(-50%);border-top:1px solid rgba(245,158,11,.35);border-bottom:1px solid rgba(245,158,11,.35);pointer-events:none;z-index:1}
+.reel-inner{display:flex;flex-direction:column;align-items:center;will-change:transform}
+.reel-item{width:68px;height:80px;display:flex;align-items:center;justify-content:center;font-size:1.9rem;flex-shrink:0}
+.gacha-pbtn{
+  background:linear-gradient(135deg,var(--gold),#fbbf24);color:#000;border:none;
+  padding:13px 30px;border-radius:11px;font-family:var(--fs);font-size:.75rem;
+  font-weight:900;letter-spacing:2px;cursor:pointer;transition:all .22s;
+  box-shadow:0 4px 20px rgba(245,158,11,.35)
+}
+.gacha-pbtn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(245,158,11,.5)}
+.gacha-pbtn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.gacha-res{margin-top:12px;padding:10px;border-radius:9px;font-family:var(--fs);font-size:.68rem;min-height:36px}
+.gacha-res.common{background:rgba(100,116,139,.12);border:1px solid rgba(100,116,139,.28);color:var(--dim)}
+.gacha-res.rare{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#60a5fa}
+.gacha-res.epic{background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.35);color:#c084fc}
+.gacha-res.legend{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:var(--gold)}
+
+/* ════════════════════════════════════════
+   PROFILE
+════════════════════════════════════════ */
+.rank-hero{text-align:center;padding:26px 20px;background:linear-gradient(145deg,rgba(245,158,11,.08),rgba(0,0,0,.4));border:1px solid rgba(245,158,11,.28);border-radius:18px;margin-bottom:16px}
+.rank-big{font-family:var(--fs);font-weight:900;font-size:5rem;line-height:1;
+  background:linear-gradient(135deg,var(--gold),#fef3c7,var(--gold));background-size:200% auto;
+  -webkit-background-clip:text;color:transparent;animation:rshine 3s linear infinite}
+.rank-nm{font-family:var(--fs);font-size:.6rem;letter-spacing:4px;color:var(--muted);margin-top:4px}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.pcard{padding:14px;background:var(--card);border:1px solid var(--border);border-radius:11px;text-align:center}
+.pv{font-family:var(--fs);font-size:1.5rem;font-weight:700;color:var(--bright)}
+.pl{font-family:var(--fs);font-size:.5rem;letter-spacing:2px;color:var(--muted);margin-top:3px}
+
+/* ════════════════════════════════════════
+   BOTTOM NAV (mobile only)
+════════════════════════════════════════ */
+.bottom-nav{
+  height:var(--nav);background:rgba(6,9,15,.96);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);display:none;align-items:center;
+  justify-content:space-around;padding:0 8px;flex-shrink:0
+}
+.bottom-nav.vis{display:flex}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0;background:none;border:none;cursor:pointer;color:var(--muted);font-family:var(--fs);font-size:.46rem;letter-spacing:1px;transition:color .2s}
+.nb.active{color:var(--cc)}
+.nb .ni{font-size:1.2rem}
+.nb.active .ni{filter:drop-shadow(0 0 5px var(--cc))}
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+#toast{
+  position:fixed;bottom:calc(var(--nav) + 14px);left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background:rgba(0,0,0,.92);border:1px solid rgba(0,212,170,.38);border-radius:9px;
+  padding:9px 18px;font-family:var(--fs);font-size:.66rem;letter-spacing:1px;
+  color:var(--cc);z-index:9500;opacity:0;transition:all .3s var(--ease);
+  white-space:nowrap;pointer-events:none;backdrop-filter:blur(16px)
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(min-width:768px){#toast{bottom:18px}}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<canvas id="trail-canvas"></canvas>
+<div id="mist-wrap"><div class="mist"></div><div class="mist"></div><div class="mist"></div></div>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+<div class="bgrid"></div>
+<div id="ex-tip">
+  <div class="etip-name" id="etip-name">—</div>
+  <div class="etip-muscles" id="etip-muscles"></div>
+  <div class="etip-why" id="etip-why"></div>
+  <div class="etip-form" id="etip-form"></div>
+  <div class="etip-char" id="etip-char"></div>
+</div>
+
+<div id="app">
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar" style="display:none">
+  <div class="sb-logo">SYS//MAX</div>
+  <button class="sb-btn" id="snav-dashboard" onclick="nav('dashboard')"><span class="si">⬡</span>STATUS</button>
+  <button class="sb-btn" id="snav-workout"   onclick="nav('workout')"><span class="si">⚔</span>TRAIN</button>
+  <button class="sb-btn" id="snav-nutrition" onclick="nav('nutrition')"><span class="si">◈</span>DIET</button>
+  <button class="sb-btn" id="snav-history"   onclick="nav('history')"><span class="si">◉</span>LOG</button>
+  <button class="sb-btn" id="snav-store"     onclick="nav('store')"><span class="si">◆</span>STORE</button>
+  <button class="sb-btn" id="snav-profile"   onclick="nav('profile')"><span class="si">◎</span>PROFILE</button>
+  <div class="sb-player" id="sb-player" style="display:none">
+    <div class="sb-name" id="sb-name">—</div>
+    <div class="sb-sub"  id="sb-sub">—</div>
+  </div>
+</aside>
+
+<div class="main">
+<div class="screen-wrap">
+
+<!-- BOOT -->
+<div id="sc-boot" class="screen active">
+  <div class="boot-box">
+    <div class="boot-logo glitch-adv" data-text="SYS//MAX">SYS//MAX</div>
+    <div class="boot-sub">PLAYER OPTIMIZATION SYSTEM v3.0</div>
+    <div id="boot-lines"></div>
+    <div class="boot-bar"><div class="boot-fill" id="bfill"></div></div>
+    <div style="font-family:var(--fm);font-size:.66rem;color:var(--muted)" id="bstatus">INITIALIZING...<span class="cur"></span></div>
+  </div>
+</div>
+
+<!-- ONBOARD -->
+<div id="sc-onboard" class="screen">
+  <div class="sc-content">
+    <div class="ob-head" style="margin-bottom:26px">
+      <div class="lbl" style="margin-bottom:8px">PLAYER REGISTRATION</div>
+      <h1>SYS//MAX</h1>
+      <div class="id-preview" id="id-prev">YOUR IDENTITY AWAITS...</div>
+    </div>
+    <div class="fg">
+      <label class="fl">YOUR NAME / CALLSIGN</label>
+      <input type="text" id="in-name" placeholder="e.g. Hunter, Ghost, Zero..." oninput="updateId()" maxlength="22">
+    </div>
+    <div class="fg">
+      <label class="fl">Bodyweight (kg)</label>
+      <input type="number" id="in-w" placeholder="e.g. 70" oninput="calcBMI()" min="30" max="300">
+    </div>
+    <div class="fg">
+      <label class="fl">Height (cm)</label>
+      <input type="number" id="in-h" placeholder="e.g. 175" oninput="calcBMI()" min="100" max="250">
+    </div>
+    <div class="bmi-chip" id="bmi-chip"></div>
+    <div class="fg" style="margin-top:14px">
+      <label class="fl">Equipment Access</label>
+      <select id="in-eq">
+        <option value="none">Bodyweight / Calisthenics Only</option>
+        <option value="gym">Full Gym Access</option>
+      </select>
+    </div>
+    <button class="btn btn-p" onclick="submitOB()" style="margin-top:22px">INITIALIZE SYSTEM →</button>
+  </div>
+</div>
+
+<!-- CHAR SELECT (carousel) -->
+<div id="sc-char-select" class="screen">
+  <div class="sc-content" style="padding-bottom:16px">
+    <div class="lbl">SELECT YOUR PATH</div>
+    <p style="font-size:.8rem;color:var(--muted);margin:5px 0 4px">Your choice shapes your 90-day protocol and companion style.</p>
+    <div class="carousel-wrap">
+      <div class="car-vp" id="car-vp"></div>
+      <div class="car-ctrl">
+        <button class="car-arr" onclick="carMove(-1)">← PREV</button>
+        <div class="dots" id="dots"></div>
+        <button class="car-arr" onclick="carMove(1)">NEXT →</button>
+      </div>
+      <button class="btn btn-p car-sel" onclick="selChar()">CHOOSE THIS PATH →</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="sc-dashboard" class="screen">
+  <div class="dash-top">
+    <div>
+      <div style="font-family:var(--fs);font-size:.56rem;letter-spacing:2px;color:var(--muted)">WELCOME BACK,</div>
+      <div class="sys" style="font-size:1.4rem;font-weight:900" id="d-name">—</div>
+      <div style="font-size:.76rem;color:var(--cc);margin-top:2px" id="d-path">—</div>
+    </div>
+    <div class="rank-gem" onclick="nav('profile')" id="d-rank">E<span class="rg-sub">RANK</span></div>
+  </div>
+  <div class="sc-content" style="padding-top:14px">
+    <div class="srow">
+      <div class="sc"><div class="sv" style="color:#f97316" id="d-streak">0</div><div class="sl">STREAK</div></div>
+      <div class="sc"><div class="sv" style="color:var(--gold)" id="d-coins">0</div><div class="sl">COINS</div></div>
+      <div class="sc"><div class="sv" style="color:var(--cc)" id="d-xp">0</div><div class="sl">TOTAL XP</div></div>
+    </div>
+    <div id="d-bmi-alert"></div>
+    <div id="d-travel-banner"></div>
+    <div class="qpanel">
+      <div class="phase-tag" id="d-phase">PHASE 1 — FOUNDATION</div>
+      <div class="qname" id="d-qname">Loading...</div>
+      <div class="qfocus" id="d-qfocus">Loading protocol...</div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--fs);font-size:.58rem;color:var(--muted);margin-bottom:5px">
+        <span id="d-day">Day 1 / 90</span><span id="d-plbl">Foundation</span>
+      </div>
+      <div class="pt"><div class="pf" id="d-prog"></div></div>
+      <button class="btn btn-p" onclick="nav('workout')" style="margin-top:13px;font-family:var(--fs);font-size:.68rem;letter-spacing:2px">OPEN TRAINING PROTOCOL →</button>
+    </div>
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-sm" onclick="nav('nutrition')" style="flex:1">🥗 DIET</button>
+      <button class="btn btn-sm" onclick="nav('store')"     style="flex:1">🏪 STORE</button>
+      <button class="btn btn-sm" onclick="nav('history')"   style="flex:1">📜 LOG</button>
+    </div>
+    <div style="margin-top:9px">
+      <button class="btn btn-sm" onclick="openTravelModal()" id="d-travel-btn" style="width:100%;border-color:rgba(245,158,11,.35);color:var(--gold)">✈ TRAVEL MODE — Away from the gym? Tap here.</button>
+    </div>
+  </div>
+</div>
+
+<!-- WORKOUT — custom layout, NOT using sc-content -->
+<div id="sc-workout" class="screen">
+  <!-- fixed header -->
+  <div class="wo-head">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <button class="btn btn-sm" onclick="nav('dashboard')" style="width:auto;padding:7px 13px">← BACK</button>
+      <div class="lbl">TRAINING PROTOCOL</div>
+    </div>
+    <div class="sys" style="font-size:.95rem" id="wo-title">—</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-top:3px" id="wo-focus">—</div>
+    <div style="display:flex;justify-content:space-between;font-family:var(--fs);font-size:.56rem;color:var(--muted);margin-top:9px;margin-bottom:5px">
+      <span id="wo-day">Day 1/90</span><span id="wo-phase">Phase 1</span>
+    </div>
+    <div class="pt"><div class="pf" id="wo-prog"></div></div>
+  </div>
+  <!-- scrollable exercise list -->
+  <div class="wo-list" id="wo-list"></div>
+  <!-- fixed footer -->
+  <div class="wo-foot">
+    <button class="btn btn-complete" id="btn-complete" onclick="completeWO()" disabled>[ COMPLETE ALL SETS TO UNLOCK ]</button>
+    <div class="done-msg" id="done-msg"></div>
+  </div>
+</div>
+
+<!-- NUTRITION -->
+<div id="sc-nutrition" class="screen">
+  <div class="sc-content" style="padding-top:22px" id="nutri-root">
+    <div class="lbl">NUTRITION PROTOCOL</div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="sc-history" class="screen">
+  <div class="sc-content" style="padding-top:22px">
+    <div class="lbl">COMBAT LOG</div>
+    <div class="sys" style="font-size:1.2rem;margin:5px 0 15px">Workout History</div>
+    <div id="hist-list"></div>
+  </div>
+</div>
+
+<!-- STORE -->
+<div id="sc-store" class="screen">
+  <div class="sc-content" style="padding-top:22px">
+    <div class="lbl">SYSTEM STORE</div>
+    <div class="sys" style="font-size:1.2rem;margin:5px 0 15px">Item Exchange</div>
+    <div class="sbal">
+      <div>
+        <div style="font-family:var(--fs);font-size:.56rem;letter-spacing:2px;color:var(--muted)">COIN BALANCE</div>
+        <div class="sbal-v">🪙 <span id="store-coins">0</span></div>
+      </div>
+      <div style="font-size:.74rem;color:var(--dim);text-align:right">+10🪙/workout<br>+25🪙 streak milestone</div>
+    </div>
+    <!-- GACHA -->
+    <div class="gacha-box">
+      <div class="gacha-ttl">◆ SYSTEM GACHA ◆</div>
+      <div class="gacha-sub">Spend 25🪙 — Common → Legendary drops</div>
+      <div class="reels">
+        <div class="reel-wrap"><div class="stripe"></div><div class="reel-inner" id="rl0"></div></div>
+        <div class="reel-wrap"><div class="stripe"></div><div class="reel-inner" id="rl1"></div></div>
+        <div class="reel-wrap"><div class="stripe"></div><div class="reel-inner" id="rl2"></div></div>
+      </div>
+      <button class="gacha-pbtn" id="g-btn" onclick="doPull()">◆ PULL — 25🪙</button>
+      <div class="gacha-res" id="g-res"></div>
+    </div>
+    <div class="lbl" style="margin-bottom:12px">SHOP</div>
+    <div id="shop-items"></div>
+    <div class="lbl" style="margin:18px 0 10px">INVENTORY</div>
+    <div id="inv-list"></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="sc-profile" class="screen">
+  <div class="sc-content" style="padding-top:22px">
+    <div class="lbl">PLAYER PROFILE</div>
+    <div class="rank-hero">
+      <div style="font-family:var(--fs);font-size:.56rem;letter-spacing:4px;color:var(--muted)">CURRENT RANK</div>
+      <div class="rank-big" id="p-rank">E</div>
+      <div class="rank-nm" id="p-rnm">NOVICE</div>
+      <div style="display:flex;justify-content:space-between;font-family:var(--fs);font-size:.58rem;color:var(--muted);margin:12px 0 5px">
+        <span id="p-xpc">0 XP</span><span id="p-xpn">D at 150 XP</span>
+      </div>
+      <div class="pt"><div class="pf pf-gold" id="p-xpbar"></div></div>
+    </div>
+    <div class="pgrid" id="pgrid"></div>
+    <button class="btn" onclick="nav('char-select')" style="margin-bottom:10px">⚔ CHANGE PATH</button>
+    <button class="btn btn-danger" onclick="doReset()">⚠ RESET ALL DATA</button>
+  </div>
+</div>
+
+</div><!-- screen-wrap -->
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav" id="bnav">
+  <button class="nb" id="bnav-dashboard" onclick="nav('dashboard')"><span class="ni">⬡</span>STATUS</button>
+  <button class="nb" id="bnav-workout"   onclick="nav('workout')"><span class="ni">⚔</span>TRAIN</button>
+  <button class="nb" id="bnav-nutrition" onclick="nav('nutrition')"><span class="ni">◈</span>DIET</button>
+  <button class="nb" id="bnav-history"   onclick="nav('history')"><span class="ni">◉</span>LOG</button>
+  <button class="nb" id="bnav-store"     onclick="nav('store')"><span class="ni">◆</span>STORE</button>
+</nav>
+</div><!-- main -->
+<!-- TRAVEL MODE MODAL -->
+<div id="travel-modal">
+  <div class="travel-box">
+    <div class="travel-header">
+      <div class="travel-icon">✈</div>
+      <div>
+        <div class="travel-title">TRAVEL MODE</div>
+      </div>
+    </div>
+    <div class="travel-sub">Heading somewhere without gym access? Activate Travel Mode and the system will automatically switch your training protocol to bodyweight-only for the duration of your trip — then restore your gym program when you return. Your streak stays intact. Your progress keeps moving.</div>
+    <div class="travel-days-label">HOW MANY DAYS ARE YOU AWAY?</div>
+    <div class="travel-day-grid" id="travel-day-grid">
+      <button class="tday-btn" onclick="selectTravelDays(1)">1</button>
+      <button class="tday-btn" onclick="selectTravelDays(2)">2</button>
+      <button class="tday-btn" onclick="selectTravelDays(3)">3</button>
+      <button class="tday-btn" onclick="selectTravelDays(4)">4</button>
+      <button class="tday-btn" onclick="selectTravelDays(5)">5</button>
+      <button class="tday-btn" onclick="selectTravelDays(6)">6</button>
+      <button class="tday-btn" onclick="selectTravelDays(7)">7</button>
+      <button class="tday-btn" onclick="selectTravelDays(10)">10</button>
+      <button class="tday-btn" onclick="selectTravelDays(14)">14</button>
+      <button class="tday-btn" onclick="selectTravelDays(0)">∞</button>
+    </div>
+    <div class="travel-btns">
+      <button class="travel-go" id="travel-go-btn" onclick="activateTravel()" disabled>ACTIVATE TRAVEL MODE</button>
+      <button class="travel-cancel" onclick="closeTravelModal()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM CONFIRM MODAL -->
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-title">⚠ WARNING — IRREVERSIBLE ACTION</div>
+    <div class="confirm-msg">This will permanently erase all progress, streak data, XP, coins and inventory. Your 90-day journey will be wiped. Are you absolutely sure?</div>
+    <div class="confirm-btns">
+      <button class="confirm-yes" onclick="executeReset()">RESET EVERYTHING</button>
+      <button class="confirm-no" onclick="closeConfirm()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- app -->
+
+<div id="toast"></div>
+
+<!-- PAGE WIPE -->
+<div id="page-wipe"></div>
+
+<!-- AMBIENT HUD -->
+<div id="hud-layer">
+  <div class="hud-corner hud-tl">
+    <svg width="48" height="48" viewBox="0 0 48 48"><polyline points="0,24 0,0 24,0" fill="none" stroke="var(--cc)" stroke-width=".6" opacity=".35"/></svg>
+    <div class="hud-coord" style="top:52px;left:0">PROTOCOL//v3.0</div>
+    <div class="hud-vert" style="top:8px;left:52px">SYS//MAX</div>
+  </div>
+  <div class="hud-corner hud-tr">
+    <svg width="48" height="48" viewBox="0 0 48 48"><polyline points="24,0 48,0 48,24" fill="none" stroke="var(--cc)" stroke-width=".6" opacity=".35"/></svg>
+    <div class="hud-vert" style="top:52px;right:0;text-align:right">ENCRYPTION:ACTIVE</div>
+    <div class="hud-coord" style="top:8px;right:52px">NODE:SECURE</div>
+  </div>
+  <div class="hud-corner hud-bl">
+    <svg width="48" height="48" viewBox="0 0 48 48"><polyline points="0,24 0,48 24,48" fill="none" stroke="var(--cc)" stroke-width=".6" opacity=".35"/></svg>
+    <div class="hud-coord" style="bottom:52px;left:0">KAIONISM//SYS</div>
+    <div class="hud-vert" style="bottom:8px;left:52px">UPTIME:<span id="hud-uptime">00:00:00</span></div>
+  </div>
+  <div class="hud-corner hud-br">
+    <svg width="48" height="48" viewBox="0 0 48 48"><polyline points="24,48 48,48 48,24" fill="none" stroke="var(--cc)" stroke-width=".6" opacity=".35"/></svg>
+    <div class="hud-coord" style="bottom:8px;right:52px">STATUS:NOMINAL</div>
+  </div>
+  <div id="hud-ch"><div class="ch-h"></div><div class="ch-v"></div><div class="ch-ring"></div></div>
+  <div class="hud-gutter hud-gutter-l">SYS//MAX · LOOKISM OPTIMIZATION PROTOCOL · KAIONISM SYSTEMS</div>
+  <div class="hud-gutter hud-gutter-r">DAY <span id="hud-day">001</span> / 090 · OPERATIVE: <span id="hud-op">SUBJECT</span></div>
+</div>
+
+<!-- TICKER -->
+<div id="ticker-wrap"><div id="ticker-inner"></div></div>
+
+<!-- NOVO COMPANION AVATAR -->
+<div id="novo-avatar">
+  <svg viewBox="0 0 64 64" width="64" height="64" style="overflow:visible">
+    <circle cx="32" cy="32" r="28" fill="none" stroke="var(--cc)" stroke-width=".6" stroke-dasharray="4 8" opacity=".4" style="animation:novoRing 12s linear infinite;transform-origin:32px 32px"/>
+    <circle cx="32" cy="32" r="20" fill="none" stroke="var(--cc)" stroke-width=".5" stroke-dasharray="2 5" opacity=".22" style="animation:novoRing 8s linear infinite reverse;transform-origin:32px 32px"/>
+    <circle cx="32" cy="32" r="12" fill="rgba(6,9,15,.9)" stroke="var(--cc)" stroke-width="1" opacity=".95"/>
+    <circle cx="32" cy="32" r="12" fill="none" stroke="var(--cc)" stroke-width="1.5" opacity="0" style="animation:novoCore 2.8s ease-in-out infinite"/>
+    <circle id="neye-l" cx="28" cy="30" r="1.5" fill="var(--cc)" opacity=".9"/>
+    <circle id="neye-r" cx="36" cy="30" r="1.5" fill="var(--cc)" opacity=".9"/>
+    <line x1="28" y1="36" x2="36" y2="36" stroke="var(--cc)" stroke-width="1" stroke-linecap="round" opacity=".7"/>
+    <line x1="32" y1="20" x2="32" y2="44" stroke="var(--cc)" stroke-width=".4" opacity=".15"/>
+    <line x1="20" y1="32" x2="44" y2="32" stroke="var(--cc)" stroke-width=".4" opacity=".15"/>
+  </svg>
+  <div id="novo-bubble"></div>
+</div>
+
+<!-- CURSOR -->
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<script>
+/* ════════════════════════════════════════
+   SOUND ENGINE — PS5 style mechanical
+════════════════════════════════════════ */
+let _ac=null;
+function AC(){
+  if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();
+  if(_ac.state==='suspended')_ac.resume();
+  return _ac;
+}
+function snd(type){
+  try{
+    const ctx=AC(),t=ctx.currentTime,G=ctx.createGain();G.connect(ctx.destination);
+    if(type==='hover'){
+      const o=ctx.createOscillator();o.connect(G);o.type='sine';
+      o.frequency.setValueAtTime(1600,t);o.frequency.exponentialRampToValueAtTime(2000,t+.05);
+      G.gain.setValueAtTime(.035,t);G.gain.exponentialRampToValueAtTime(.001,t+.07);
+      o.start(t);o.stop(t+.07);
+    }else if(type==='click'){
+      const buf=ctx.createBuffer(1,Math.floor(ctx.sampleRate*.04),ctx.sampleRate);
+      const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2.5);
+      const s=ctx.createBufferSource();s.buffer=buf;
+      const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.value=1200;f.Q.value=.8;
+      s.connect(f);f.connect(G);G.gain.setValueAtTime(.18,t);G.gain.exponentialRampToValueAtTime(.001,t+.04);
+      s.start(t);
+    }else if(type==='nav'){
+      [0,1].forEach((i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(G);
+        o.type='sine';o.frequency.value=[700,1050][i];
+        g.gain.setValueAtTime(0,t+i*.05);g.gain.linearRampToValueAtTime(.055,t+i*.05+.04);
+        g.gain.exponentialRampToValueAtTime(.001,t+i*.05+.18);
+        o.start(t+i*.05);o.stop(t+i*.05+.18);
+      });
+      G.gain.value=1;
+    }else if(type==='select'){
+      [440,554,660].forEach((f,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(G);
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0,t+i*.07);g.gain.linearRampToValueAtTime(.08,t+i*.07+.05);
+        g.gain.exponentialRampToValueAtTime(.001,t+i*.07+.28);
+        o.start(t+i*.07);o.stop(t+i*.07+.28);
+      });
+      G.gain.value=1;
+    }else if(type==='complete'){
+      [330,440,554,660,880].forEach((f,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(G);
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0,t+i*.07);g.gain.linearRampToValueAtTime(.09,t+i*.07+.05);
+        g.gain.exponentialRampToValueAtTime(.001,t+i*.07+.4);
+        o.start(t+i*.07);o.stop(t+i*.07+.4);
+      });G.gain.value=1;
+    }else if(type==='rankup'){
+      [392,494,587,784,988,1175].forEach((f,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(G);
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0,t+i*.07);g.gain.linearRampToValueAtTime(.11,t+i*.07+.05);
+        g.gain.exponentialRampToValueAtTime(.001,t+i*.07+.5);
+        o.start(t+i*.07);o.stop(t+i*.07+.5);
+      });G.gain.value=1;
+    }else if(type==='gspin'){
+      const o=ctx.createOscillator();o.connect(G);o.type='sawtooth';
+      o.frequency.setValueAtTime(60,t);o.frequency.linearRampToValueAtTime(180,t+.6);
+      G.gain.setValueAtTime(.07,t);G.gain.exponentialRampToValueAtTime(.001,t+.6);
+      o.start(t);o.stop(t+.6);
+    }else if(type==='gwin'){
+      [523,659,784,1047,1319].forEach((f,i)=>{
+        const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(G);
+        o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0,t+i*.09);g.gain.linearRampToValueAtTime(.11,t+i*.09+.06);
+        g.gain.exponentialRampToValueAtTime(.001,t+i*.09+.5);
+        o.start(t+i*.09);o.stop(t+i*.09+.5);
+      });G.gain.value=1;
+    }
+  }catch(e){}
+}
+document.addEventListener('mouseover',e=>{
+  if(e.target.closest('button,.car-arr,.cp-card,.sb-btn,.nb,.bbtn,.gacha-pbtn'))snd('hover');
+});
+document.addEventListener('mousedown',e=>{
+  if(e.target.closest('button,.car-arr'))snd('click');
+});
+
+/* ════════════════════════════════════════
+   CHARACTER DATA
+════════════════════════════════════════ */
+const CHARS=[
+{id:'gun',name:'Gun Park',title:'The Shiro Oni',init:'G',color:'#ef4444',glow:'rgba(239,68,68,.35)',
+ vibe:'"A fortress made of muscle and scar tissue."',
+ physique:'Classic X-frame — massive wide-set shoulders and a thick neck tapering into an incredibly tight, lean waist. Muscles look like braided steel cables, not puffy. His torso is a map of jagged scars including the iconic horizontal scar from Eli. Conditioning so dry his skin appears vacuum-packed over his abdominal wall and serratus anterior.',
+ tags:['KYOKUSHIN','IRON BODY','DURABILITY','AIKIDO'],
+ specialty:'Maximum body density and damage absorption. He doesn\'t dodge — he endures.',
+ proj:['30D — Core becomes armor. Tendon strength builds.','60D — Striking density increases. You carry yourself differently.','90D — Iron body achieved. You absorb what others cannot.'],
+ nut:{goal:'Maximum Density & Recovery',calf:38,
+  macros:['Protein 2g/kg — eggs, canned tuna, chicken thighs, pork chops, lentils','Carbs 5g/kg — rice, oats, potatoes, bread, pasta','Fats 1g/kg — eggs, peanut butter, cooking oil'],
+  meals:[{t:'MORNING',f:'3–4 eggs + 2 cups rice + black coffee. Budget: canned sardines on rice is just as effective.',b:'~$1.50'},
+         {t:'PRE-WO',f:'Peanut butter on 2 slices bread + banana. Or oats with water and sugar.',b:'~$0.60'},
+         {t:'POST-WO',f:'Canned tuna + rice + any cheap vegetable. Protein powder optional, never required.',b:'~$2.00'},
+         {t:'DINNER',f:'Pork chops or chicken thighs + potatoes or rice + whatever greens are cheapest at the market.',b:'~$3.00'}],
+  avoid:'Alcohol, excessive processed sugar. Never skip meals — density requires consistent fuel.'},
+ phases:{
+  1:{n:'IRON FOUNDATION',f:'Condition tendons, ligaments, joints. A base that cannot be broken.',
+   gym:[{n:'Barbell Back Squat',s:3,r:'5',rest:'2 min',note:'Full depth. Brace hard. This is the base.'},{n:'Conventional Deadlift',s:3,r:'5',rest:'3 min',note:'Flat back. Hip hinge. No rounding.'},{n:'Heavy Bag Body Shots',s:5,r:'2 min rounds',rest:'60s',note:'Kyokushin: alternating mid-section hooks.'},{n:'Plank Hold',s:4,r:'60s',rest:'45s',note:'Squeeze glutes and abs simultaneously.'},{n:'Knuckle Pushups',s:4,r:'15',rest:'60s',note:'Hard surface. Gradual conditioning only.'}],
+   none:[{n:'Knuckle Pushups',s:4,r:'20',rest:'60s',note:'Hard surface. Controlled full descent.'},{n:'Iron Body Forearm Strikes',s:3,r:'15 strikes/arm',rest:'60s',note:'Strike forearms against firm surface. Build slowly over weeks — not days.'},{n:'Long Plank Hold',s:4,r:'60s',rest:'45s',note:'Squeeze everything simultaneously.'},{n:'Wrestler Bridge',s:3,r:'30s',rest:'60s',note:'Neck conditioning. Start cautiously. No pain.'},{n:'Jump Squat',s:4,r:'12',rest:'60s',note:'Fully extend hips at top of jump.'}]},
+  2:{n:'DURABILITY PROTOCOL',f:'Increase volume and contact conditioning. Body adapts under pressure.',
+   gym:[{n:'Barbell Squat',s:4,r:'5',rest:'2 min',note:'Add weight from Phase 1.'},{n:'Romanian Deadlift',s:4,r:'8',rest:'2 min',note:'Slow eccentric. Posterior chain focus.'},{n:'Heavy Bag Full Rounds',s:6,r:'3 min',rest:'60s',note:'Head and body. Speed up each round.'},{n:'Ab Wheel Rollout',s:4,r:'12',rest:'60s',note:'Full extension if possible. Control the return.'},{n:"Farmer's Walk",s:4,r:'40m',rest:'90s',note:'Max load. Shoulders back, chest tall.'}],
+   none:[{n:'Knuckle Pushup Volume',s:5,r:'25',rest:'60s',note:'Consistent weekly progression.'},{n:'Diamond Pushups',s:4,r:'15',rest:'60s',note:'Elbows tight. Tricep drive.'},{n:'Iron Shin Conditioning',s:4,r:'15 strikes/leg',rest:'60s',note:'Rolling pin or door frame. Build slowly — months, not weeks.'},{n:'Dragon Flag Progression',s:3,r:'6',rest:'90s',note:'Stable grip overhead. Full extension goal.'},{n:'Burpees',s:5,r:'15',rest:'60s',note:'Full lockout top. Chest to floor.'}]},
+  3:{n:'SHIRO ONI PROTOCOL',f:'Peak iron body. No ceiling. Absorb everything.',
+   gym:[{n:'Squat Max Effort',s:5,r:'3',rest:'3 min',note:'Near-max. Test what 60 days built.'},{n:'Deadlift Heavy Singles',s:5,r:'2',rest:'3 min',note:'Add weight. This is the peak test.'},{n:'Kyokushin Volume Bag',s:8,r:'3 min',rest:'45s',note:'Every round is a fight. Endure.'},{n:'Dragon Flag Full',s:4,r:'10',rest:'90s',note:'Full extension. Controlled negative.'},{n:"Farmer's Walk Heavy",s:5,r:'50m',rest:'2 min',note:'Heavier than Phase 2. This is the ceiling.'}],
+   none:[{n:'One-Arm Pushup Progression',s:4,r:'6/arm',rest:'90s',note:'Wall or incline if needed. Progress to floor.'},{n:'Weighted Knuckle Pushups',s:5,r:'25',rest:'60s',note:'Loaded backpack for resistance.'},{n:'Full Iron Body Circuit',s:5,r:'20 strikes/area',rest:'60s',note:'Forearms, shins, hands — all surfaces. Systematically.'},{n:'Dragon Flag',s:4,r:'12',rest:'90s',note:'Full controlled reps. No shortcuts.'},{n:'Pistol Squat',s:4,r:'8/leg',rest:'90s',note:'Single leg. Slow eccentric descent.'}]}}
+},
+{id:'daniel',name:'Daniel Park',title:'The Dual Perfection',init:'D',color:'#06b6d4',glow:'rgba(6,182,212,.35)',
+ vibe:'"The platonic ideal of human movement — neither too big to lose speed nor too lean to lose power."',
+ physique:'Two distinct bodies. The "Big" body: maxed-out perfection — every muscle in ideal proportion with full, round bellies at low body fat. The "Small" body post-Gun training: leaner, more compact, wiry strength built specifically for high-intensity calisthenics. Both are masterpieces in different ways.',
+ tags:['COPY','SYSTEMA','AGILITY','ULTRA INSTINCT'],
+ specialty:'Perfect kinetic vision and adaptability — his body perfectly replicates any movement observed.',
+ proj:['30D — Coordination improves noticeably. Movements become efficient.','60D — Explosive agility unlocked. Body anticipates movement.','90D — Lean, fluid, functional. The masterpiece physique in progress.'],
+ nut:{goal:'Lean Performance & Kinetic Efficiency',calf:33,
+  macros:['Protein 2g/kg — eggs, canned tuna, chicken legs, pork mince, lentils','Carbs 3.5g/kg — oats, brown rice, potatoes, fruit, bread','Fats 0.8g/kg — eggs, peanut butter, vegetable oil'],
+  meals:[{t:'MORNING',f:'Oats with banana and peanut butter. Or 3 eggs + toast + fruit.',b:'~$1.20'},
+         {t:'PRE-WO',f:'2 slices bread + peanut butter or a banana + small handful of peanuts.',b:'~$0.50'},
+         {t:'POST-WO',f:'Canned tuna or chicken leg + rice or potato. Fast and effective.',b:'~$2.00'},
+         {t:'DINNER',f:'Minced pork or chicken thigh + whatever vegetables are cheapest + rice or pasta.',b:'~$2.50'}],
+  avoid:'Processed junk and excess sugar. Max 300 kcal deficit for the "small body" phase.'},
+ phases:{
+  1:{n:'KINETIC FOUNDATION',f:'Build coordination, mobility and movement efficiency from scratch.',
+   gym:[{n:'Romanian Deadlift',s:3,r:'10',rest:'90s',note:'Slow eccentric. Feel the hamstrings load.'},{n:'Pull-Ups',s:4,r:'8',rest:'90s',note:'Full dead hang. Chin over bar each rep.'},{n:'Box Jump',s:4,r:'8',rest:'90s',note:'Land soft. Absorb the force through legs.'},{n:'Turkish Get-Up',s:3,r:'5/side',rest:'2 min',note:'Slow and deliberate. Every joint counts.'},{n:'Agility Ladder Drill',s:4,r:'4 patterns',rest:'60s',note:'Speed and precision in equal measure.'}],
+   none:[{n:'Explosive Burpee',s:4,r:'12',rest:'60s',note:'Jump high. Full range every rep.'},{n:'Pull-Ups',s:4,r:'8',rest:'90s',note:'Full hang to chin over bar.'},{n:'Bear Crawl',s:4,r:'20m',rest:'60s',note:'Opposite limb. Stay low and controlled.'},{n:'Pistol Squat Progression',s:3,r:'6/leg',rest:'90s',note:'Box pistol to build the foundation.'},{n:'Shadowboxing',s:5,r:'2 min',rest:'45s',note:'Fluid. No tension. Copy what you know.'}]},
+  2:{n:'SYSTEMA CIRCUITS',f:'Increase explosive power and functional strength. Move with intention.',
+   gym:[{n:'Hang Power Clean',s:4,r:'5',rest:'2 min',note:'Explosive hip drive. Quarter squat catch.'},{n:'Weighted Pull-Up',s:4,r:'6',rest:'2 min',note:'Add 5–10kg. Full range.'},{n:'Box Jump High',s:4,r:'6',rest:'90s',note:'Max height. Step down controlled.'},{n:'Sprint Intervals',s:8,r:'20s sprint/40s walk',rest:'—',note:'All-out on the sprint phase.'},{n:'Single-Leg RDL',s:3,r:'10/side',rest:'60s',note:'Balance and posterior chain combined.'}],
+   none:[{n:'Plyometric Pushup',s:4,r:'10',rest:'90s',note:'Hands leave floor. Chest to floor every rep.'},{n:'Broad Jump',s:5,r:'5',rest:'60s',note:'Maximum horizontal distance each jump.'},{n:'Muscle-Up Progression',s:3,r:'max',rest:'2 min',note:'Work toward the full transition.'},{n:'Sprint Intervals',s:8,r:'20s sprint/40s walk',rest:'—',note:'All-out. Perfect form throughout.'},{n:'V-Sit Progression',s:3,r:'15s',rest:'60s',note:'Compress the core hard. Legs extended.'}]},
+  3:{n:'MASTERPIECE PROTOCOL',f:'Full kinetic mastery. Lean power, explosive speed, fluid movement.',
+   gym:[{n:'Hang Snatch',s:5,r:'3',rest:'2 min',note:'Full speed. This is pure athleticism.'},{n:'Weighted Pull-Up Heavy',s:5,r:'5',rest:'2 min',note:'Near max load. Full range.'},{n:'Barbell Complex',s:5,r:'6 reps each',rest:'3 min',note:'RDL → Row → Clean → Press. No rest between.'},{n:'400m Sprint',s:4,r:'1',rest:'2 min',note:'Max effort. Record your time each session.'},{n:'Depth Jump',s:4,r:'5',rest:'2 min',note:'Step off box, explode on contact. No pause.'}],
+   none:[{n:'Clapping Pushup',s:4,r:'12',rest:'60s',note:'Full chest to floor. Maximum explosion.'},{n:'Muscle-Up',s:4,r:'5',rest:'2 min',note:'Full range. Strict preferred over kip.'},{n:'Handstand Hold',s:3,r:'30s',rest:'90s',note:'Wall okay. Work toward freestanding.'},{n:'Pistol Squat',s:4,r:'10/leg',rest:'90s',note:'No assistance. Controlled descent.'},{n:'400m Sprint',s:4,r:'1',rest:'2 min',note:'All-out. Track your time each session.'}]}}
+},
+{id:'samuel',name:'Samuel Seo',title:'The Monster of the North',init:'S',color:'#d97706',glow:'rgba(217,119,6,.35)',
+ vibe:'"Intimidating, wide, and heavy — he walks into a room and the room gets smaller."',
+ physique:'Undisputed king of upper body hypertrophy. Slab-like chest dominates his silhouette. In Heat Mode, vascularity becomes extreme and upper traps flare giving a demonic outline. Frame broader than nearly anyone in the 2nd generation, built for raw bruising power and inhuman damage absorption.',
+ tags:['STREET','HEAT MODE','RESILIENCE','UPPER BODY'],
+ specialty:'Upper body dominance driven by an inferiority complex that makes him increasingly dangerous as fights progress.',
+ proj:['30D — Chest and back noticeably thicker. Presence established.','60D — Heat Mode circuits build inhuman conditioning.','90D — Monster physique. The upper body is the weapon.'],
+ nut:{goal:'Maximum Upper Body Mass',calf:40,
+  macros:['Protein 2.4g/kg — whole eggs, pork, chicken thighs, canned fish, lentils + rice (complete protein combo)','Carbs 5g/kg — white rice, bread, oats, potatoes, pasta','Fats 1.1g/kg — cooking oil, peanut butter, whole eggs, fatty pork cuts'],
+  meals:[{t:'MORNING',f:'5 eggs + 3 cups rice. Budget alternative: pork mince fried with rice and soy sauce.',b:'~$1.80'},
+         {t:'MID-AM',f:'Bread + peanut butter + banana. Or pork rinds and fruit.',b:'~$0.70'},
+         {t:'LUNCH',f:'Pork chop or chicken thigh + big rice serving + any cheap vegetable. Cook in bulk.',b:'~$2.50'},
+         {t:'DINNER',f:'Same protein as lunch, double portions. Samuel does not eat small.',b:'~$2.50'}],
+  avoid:'Cutting phases. Samuel builds, always. Maintain a consistent caloric surplus.'},
+ phases:{
+  1:{n:'SELF-MADE FOUNDATION',f:'Establish dominant upper body strength with irrefutable volume.',
+   gym:[{n:'Incline Bench Press',s:4,r:'8',rest:'2 min',note:"Upper chest emphasis. Samuel's signature."},{n:'Flat Bench Press',s:4,r:'8',rest:'2 min',note:'Primary chest mass movement.'},{n:'Barbell Row',s:4,r:'8',rest:'2 min',note:'Back thickness. Match every press with a pull.'},{n:'Weighted Dip',s:3,r:'10',rest:'90s',note:'Lower chest and tricep density.'},{n:'Knuckle Pushups',s:4,r:'20',rest:'60s',note:'Street fighter hand conditioning.'}],
+   none:[{n:'Decline Pushup',s:5,r:'20',rest:'60s',note:'Upper chest without equipment.'},{n:'Wide Pushup',s:5,r:'20',rest:'60s',note:'Chest width emphasis.'},{n:'Pull-Up Wide Grip',s:4,r:'8',rest:'90s',note:'Back width for the monster frame.'},{n:'Chair Dip',s:4,r:'15',rest:'60s',note:'Two sturdy chairs or a firm edge.'},{n:'Knuckle Pushup',s:4,r:'20',rest:'60s',note:'Street conditioning.'}]},
+  2:{n:'HEAT MODE CIRCUITS',f:'Superset-driven volume. The inferiority complex is your fuel.',
+   gym:[{n:'Incline + Pull-Up Superset',s:5,r:'8 each',rest:'90s',note:'No rest between the two movements.'},{n:'Flat Bench + Row Superset',s:5,r:'8 each',rest:'90s',note:'Push and pull every single set.'},{n:'Fly + Face Pull Superset',s:4,r:'12 each',rest:'60s',note:'Chest isolation then rear delt health.'},{n:'Dip + Curl Superset',s:4,r:'10 each',rest:'60s',note:'Tricep then bicep. Back to back.'},{n:'Heavy Bag Street Combo',s:5,r:'2 min rounds',rest:'60s',note:'Overhand rights. Body hooks. Street style.'}],
+   none:[{n:'Pushup Superset',s:5,r:'15 wide + 15 diamond',rest:'90s',note:'30 reps total per set. No rest between.'},{n:'Pull-Up then Pushup',s:5,r:'8 pull + 15 push',rest:'90s',note:'Back then chest. Immediately.'},{n:'Decline + Wide Pushup',s:4,r:'15 each',rest:'60s',note:'Upper chest superset.'},{n:'Chair Dip + Improvised Curl',s:4,r:'15 each',rest:'60s',note:'Use a water jug or filled bag for curl.'},{n:'Knuckle Pushup',s:5,r:'25',rest:'60s',note:'Maximum hand conditioning.'}]},
+  3:{n:'MONSTER PROTOCOL',f:'Peak mass. You do not stop. That is the entire protocol.',
+   gym:[{n:'Incline Bench Heavy',s:5,r:'5',rest:'3 min',note:'Max weight. Test the ceiling.'},{n:'Flat Bench Heavy',s:5,r:'5',rest:'3 min',note:'Your strongest bench. Go.'},{n:'Heavy Row',s:5,r:'6',rest:'2 min',note:'Match every press with a pull.'},{n:'Weighted Dip Heavy',s:5,r:'8',rest:'2 min',note:'Lower chest and tricep peak density.'},{n:'Heat Mode Circuit',s:6,r:'3 min continuous',rest:'45s',note:'All upper moves back to back. No mercy.'}],
+   none:[{n:'Pushup Tri-Set',s:6,r:'15+15+15',rest:'90s',note:'Wide + diamond + decline = 45 reps per set.'},{n:'Pull-Up to Failure',s:5,r:'max',rest:'2 min',note:'Every set to complete failure.'},{n:'One-Arm Pushup Progression',s:4,r:'6/arm',rest:'90s',note:'Work toward the floor rep.'},{n:'Dip + Pushup Superset',s:5,r:'12+20',rest:'60s',note:'Chair dips into pushups immediately.'},{n:'Knuckle Pushup Volume',s:5,r:'30',rest:'60s',note:'Iron knuckles.'}]}}
+},
+{id:'vasco',name:'Vasco',title:'The Muay Thai Engine',init:'V',color:'#f97316',glow:'rgba(249,115,22,.35)',
+ vibe:'"A classical statue of a warrior. Built by pure, unadulterated hard labor."',
+ physique:'Functional power build — not heavy like Samuel, but dense. Thick powerful quads and a cobra lat spread from years of the 100/100/100/10km grind and Muay Thai. Rock-hard muscle texture. Body almost entirely covered in intricate tattoos that accentuate his definition.',
+ tags:['MUAY THAI','RAW POWER',"RUNNER'S HIGH",'8 LIMBS'],
+ specialty:'Raw destructive power. He doesn\'t rely on speed. He destroys whatever he hits.',
+ proj:['30D — Visible hypertrophy. Raw power increases substantially.','60D — Muay Thai conditioning peaks. Endurance becomes the weapon.','90D — Runner\'s High state accessible. Power is absolute.'],
+ nut:{goal:'Maximum Power Mass',calf:42,
+  macros:['Protein 2.5g/kg — chicken thighs, pork, whole eggs, canned fish, beans and rice combined','Carbs 6g/kg — white rice, potatoes, bread, oats, bananas, any starchy staple','Fats 1.2g/kg — cooking fat, peanut butter, fatty pork cuts, whole eggs'],
+  meals:[{t:'MORNING',f:'6 eggs + 3 cups rice. Budget: oats with peanut butter, banana and 2 eggs.',b:'~$1.60'},
+         {t:'PRE-WO',f:'2 slices bread + peanut butter + banana. Cheap, effective fuel.',b:'~$0.50'},
+         {t:'POST-WO',f:'Canned tuna or minced meat + 2 cups rice. Eat within 30 minutes of finishing.',b:'~$2.00'},
+         {t:'DINNER',f:'Large pork or chicken portion + potatoes or rice + any available vegetables.',b:'~$3.00'},
+         {t:'BEFORE BED',f:'Peanut butter on bread. Or a glass of milk if affordable. Cheap slow protein.',b:'~$0.60'}],
+  avoid:'Caloric deficit. You are building mass. Eat aggressively and consistently.'},
+ phases:{
+  1:{n:'MUAY THAI FOUNDATION',f:'Compound strength base and 8-limb conditioning introduction.',
+   gym:[{n:'Barbell Squat',s:4,r:'8',rest:'2 min',note:'Heavy. Legs are the base of Muay Thai.'},{n:'Bench Press',s:4,r:'8',rest:'2 min',note:'Chest and clinch pushing power.'},{n:'Deadlift',s:3,r:'5',rest:'3 min',note:'Pure posterior chain mass.'},{n:'Heavy Bag Muay Thai',s:5,r:'3 min rounds',rest:'60s',note:'All 8 limbs: punches, kicks, elbows, knees.'},{n:'Neck Conditioning',s:3,r:'15 each plane',rest:'60s',note:'Muay Thai fighters have iron necks.'}],
+   none:[{n:'100 Pushups',s:1,r:'100 total',rest:'as needed',note:'Break into sets. Complete 100 total.'},{n:'100 Squats',s:1,r:'100 total',rest:'as needed',note:'Full depth every single rep.'},{n:'100 Sit-Ups',s:1,r:'100 total',rest:'as needed',note:'The Vasco tribute workout.'},{n:'5km Run',s:1,r:'complete',rest:'—',note:'Muay Thai endurance base. Time yourself.'},{n:'Shadowboxing 8 Limbs',s:5,r:'3 min rounds',rest:'60s',note:'All limbs: punches, kicks, knees, elbows.'}]},
+  2:{n:'POWER ACCUMULATION',f:'Push volume and load simultaneously. Size follows strength.',
+   gym:[{n:'Barbell Squat Heavy',s:5,r:'5',rest:'3 min',note:'Add weight from Phase 1.'},{n:'Weighted Dip',s:4,r:'8',rest:'2 min',note:'Heavy chest and tricep mass.'},{n:'Barbell Row',s:4,r:'8',rest:'2 min',note:'Back thickness for clinch control.'},{n:'Muay Thai Bag Heavy',s:6,r:'3 min rounds',rest:'60s',note:'Develop heavy kicks. Condition the shin bone.'},{n:'Sprint or Sled Push',s:4,r:'30m',rest:'2 min',note:'Leg drive = everything in Muay Thai.'}],
+   none:[{n:'150 Pushups',s:1,r:'150 total',rest:'as needed',note:'Progressive increase from Phase 1.'},{n:'150 Squats',s:1,r:'150 total',rest:'as needed',note:'Volume and endurance combined.'},{n:'5km Run Faster',s:1,r:'complete',rest:'—',note:'Beat your Phase 1 time. Track it.'},{n:'Burpee Muay Thai',s:6,r:'15',rest:'60s',note:'Burpee into knee strike. Full power.'},{n:'Shadow Sparring',s:6,r:'3 min rounds',rest:'60s',note:'Full Muay Thai. Imagine the opponent.'}]},
+  3:{n:"RUNNER'S HIGH PROTOCOL",f:"Peak power and endurance. Runner's High is the target state.",
+   gym:[{n:'Squat Max',s:5,r:'3',rest:'3 min',note:'Near-maximal. Test your absolute limit.'},{n:'Bench Heavy',s:5,r:'3',rest:'3 min',note:'Maximum chest pressing strength.'},{n:'Deadlift Heavy',s:5,r:'3',rest:'3 min',note:'Full posterior chain peak.'},{n:'Muay Thai Circuit',s:8,r:'3 min rounds',rest:'45s',note:"Runner's High territory. Ignore the pain."},{n:'10km Run',s:1,r:'complete',rest:'—',note:'Peak Muay Thai endurance test.'}],
+   none:[{n:'200 Pushups',s:1,r:'200 total',rest:'as needed',note:'Peak Phase 3. Complete 200.'},{n:'200 Squats',s:1,r:'200 total',rest:'as needed',note:'Beyond normal human limits.'},{n:'200 Sit-Ups',s:1,r:'200 total',rest:'as needed',note:'Core iron forged.'},{n:'10km Run',s:1,r:'complete',rest:'—',note:"Runner's High: find the state and stay there."},{n:'Shadow Muay Thai War',s:8,r:'3 min rounds',rest:'45s',note:'All 8 limbs at maximum power output.'}]}}
+},
+{id:'jake',name:'Jake Kim',title:'The MMA Aristocrat',init:'J',color:'#a855f7',glow:'rgba(168,85,247,.35)',
+ vibe:'"The quintessential heavyweight MMA fighter — engineered for 12 rounds of combat."',
+ physique:'Standing roughly 190cm with immense reach. Broad shoulders and thick core for grappling, long lean limbs for explosive striking. Balanced is the keyword. He doesn\'t look like a bodybuilder — he looks like a professional athlete with inherited genius genetics from Gapryong Kim.',
+ tags:['MMA','GRAPPLING','BLOODLINE','BJJ'],
+ specialty:'Strategic grappling, ground dominance and the Gapryong overcoming gene.',
+ proj:['30D — Functional strength established. Core and grip become formidable.','60D — Grappling conditioning peaks. The bloodline awakens.','90D — Complete MMA conditioning. Dominant in all ranges.'],
+ nut:{goal:'Functional Mass & Combat Endurance',calf:36,
+  macros:['Protein 2.2g/kg — beef mince, eggs, canned fish, chicken, lentils','Carbs 4g/kg — rice, pasta, sweet potato, bread','Fats 1g/kg — cooking oil, peanut butter, eggs'],
+  meals:[{t:'MORNING',f:'4 eggs + oats with banana + black coffee. Budget: egg fried rice.',b:'~$1.40'},
+         {t:'PRE-WO',f:'Rice cake or bread + peanut butter + water with a pinch of salt (electrolytes).',b:'~$0.50'},
+         {t:'POST-WO',f:'Canned tuna or minced beef + rice + any available vegetable.',b:'~$2.00'},
+         {t:'DINNER',f:'Beef or chicken stir fry with rice or pasta and whatever vegetables are cheapest.',b:'~$2.80'}],
+  avoid:'Empty calories. Every meal serves performance — nothing is eaten without purpose.'},
+ phases:{
+  1:{n:'BJJ FOUNDATION',f:'Grip strength, core density and grappling movement patterns.',
+   gym:[{n:'Deadlift',s:4,r:'5',rest:'2 min',note:'Foundation of all grappling power.'},{n:'Barbell Row',s:4,r:'8',rest:'90s',note:'Pull to lower chest. Clinch control strength.'},{n:'Pull-Up',s:4,r:'8',rest:'90s',note:'Full dead hang. Grip is everything in grappling.'},{n:'Hip Escape Shrimping',s:5,r:'20',rest:'45s',note:'Most important BJJ drill. Learn it now.'},{n:'Ab Wheel',s:3,r:'10',rest:'60s',note:'Core strength for guard work.'}],
+   none:[{n:'Pull-Up',s:5,r:'8',rest:'90s',note:'Full dead hang. Primary pulling movement.'},{n:'Towel Pull-Up',s:3,r:'8',rest:'90s',note:'Two towels over the bar for grip training.'},{n:'Hip Escape Shrimping',s:5,r:'25',rest:'45s',note:'The most important BJJ drill. Always.'},{n:'Sprawl Drill',s:5,r:'20',rest:'45s',note:'Explosive hip sprawl. Stop the takedown.'},{n:'L-Sit Hold',s:3,r:'20s',rest:'60s',note:'Core compression for guard control.'}]},
+  2:{n:'WRESTLING CONDITIONING',f:'Grappling circuits, takedown power and functional strength.',
+   gym:[{n:'Power Clean',s:4,r:'5',rest:'2 min',note:'Hip drive = takedown power. This is why.'},{n:'Weighted Pull-Up',s:4,r:'6',rest:'2 min',note:'Add load. Pull strength = clinch control.'},{n:'Hip Thrust',s:4,r:'10',rest:'90s',note:'Explosive hips = takedown finishing power.'},{n:'Grappling Circuit',s:5,r:'3 min rounds',rest:'60s',note:'Sprawls + shots + hip escapes in sequence.'},{n:'Neck Circuit',s:3,r:'20 each direction',rest:'60s',note:"A grappler's neck is their armor."}],
+   none:[{n:'Explosive Pull-Up',s:4,r:'6',rest:'90s',note:'Pull as fast as possible. Speed matters.'},{n:'Hip Escape Circuit',s:6,r:'3 min continuous',rest:'60s',note:'Shrimp + roll + shoot in sequence.'},{n:'Plyometric Pushup',s:4,r:'10',rest:'60s',note:'Upper body explosion for clinch breaks.'},{n:'Sprawl to Jump',s:5,r:'12',rest:'60s',note:'Sprawl → stand → jump. Real functional.'},{n:'Turkish Get-Up',s:3,r:'5/side',rest:'2 min',note:'Ground to standing. BJJ fundamental.'}]},
+  3:{n:'BLOODLINE PROTOCOL',f:'Complete MMA conditioning. Dominant in all ranges at all times.',
+   gym:[{n:'Barbell Complex',s:5,r:'5 reps each',rest:'3 min',note:'Deadlift → Clean → Squat → Press. No break.'},{n:'Weighted Pull-Up Heavy',s:5,r:'5',rest:'2 min',note:'Test your absolute strength ceiling.'},{n:'MMA Circuit',s:6,r:'3 min rounds',rest:'60s',note:'Strikes + takedowns + grappling. Full output.'},{n:'Farmer Carry Heavy',s:5,r:'50m',rest:'90s',note:'Max load. Grip dominance.'},{n:'Neck Work All Planes',s:4,r:'15',rest:'60s',note:"A grappler's ultimate armor."}],
+   none:[{n:'One-Arm Pull-Up Progression',s:4,r:'max/arm',rest:'2 min',note:'Assisted if needed. Build toward the full rep.'},{n:'Peak Grappling Circuit',s:8,r:'3 min rounds',rest:'45s',note:'Maximum intensity. You are a machine.'},{n:'Pike Handstand Pushup',s:4,r:'10',rest:'90s',note:'Overhead pressing for clinch control.'},{n:'Pistol Squat',s:4,r:'8/leg',rest:'90s',note:'Single leg power for takedown finishing.'},{n:'Sprint + Sprawl',s:10,r:'10s each',rest:'30s',note:'Peak MMA conditioning drill.'}]}}
+},
+{id:'johan',name:'Johan Seong',title:'The Evolving Copycat',init:'J',color:'#94a3b8',glow:'rgba(148,163,184,.35)',
+ vibe:'"Lean, explosive, and strung tight — built for high-speed bursts of impossible precision."',
+ physique:'Originally ectomorph, transformed to 187cm/86kg to support the 10-second UI copy ability. Very clean muscle lines — long triceps and a sharp defined midsection. Lacks the bone density of Gun or Samuel, which is exactly why his genius-level software must overcome hardware limits. His eyes are often unfocused due to progressing blindness.',
+ tags:['SPEED','IMITATION','INFINITE TECHNIQUE','COPY GENIUS'],
+ specialty:'Supreme fast-twitch dominance and genius-level movement imitation — arguably surpassing even Daniel.',
+ proj:['30D — Noticeable speed increase. Fast-twitch fibers activated.','60D — Reaction time significantly improves. Movements become unpredictable.','90D — Infinite Technique prototype: seamless combination flow achieved.'],
+ nut:{goal:'Speed & Neural Performance',calf:32,
+  macros:['Protein 1.8g/kg — canned fish, eggs, chicken breast, tofu if available, pork loin','Carbs 4g/kg — white rice, banana, dates, bread (fast-digesting fuels speed athletes)','Fats 0.8g/kg — eggs, peanut butter, cooking oil — omega-3 priority when possible'],
+  meals:[{t:'MORNING',f:'3 eggs + white rice + green tea. Simple, fast-digesting, effective.',b:'~$1.20'},
+         {t:'PRE-WO',f:'Banana + 3–4 dates + water. Fast carbs specifically for speed output.',b:'~$0.40'},
+         {t:'POST-WO',f:'Canned sardines or tuna + white rice. Fast absorption above all else.',b:'~$1.80'},
+         {t:'DINNER',f:'Chicken or pork + brown rice + any affordable greens. Omega-3 when possible.',b:'~$2.50'}],
+  avoid:'Heavy fats before training. Slow digestion kills movement speed. Eat light and move fast.'},
+ phases:{
+  1:{n:'FAST-TWITCH ACTIVATION',f:'Wake up type-II muscle fibers. Train for speed, not size.',
+   gym:[{n:'Box Jump',s:5,r:'8',rest:'90s',note:'Max height. Minimize ground contact time.'},{n:'Sprint 40m',s:8,r:'1',rest:'2 min',note:'All-out effort. Time yourself each session.'},{n:'Lateral Bound',s:4,r:'8/side',rest:'60s',note:'Push off one foot. Land controlled. Go.'},{n:'Dumbbell Snatch',s:4,r:'6/side',rest:'90s',note:'Explosive hip drive. Catch fully extended.'},{n:'Jump Rope Speed',s:5,r:'1 min',rest:'45s',note:'Fast singles. Build toward doubles.'}],
+   none:[{n:'Broad Jump',s:5,r:'6',rest:'60s',note:'Maximum horizontal distance each rep.'},{n:'Sprint 40m',s:8,r:'1',rest:'2 min',note:'Track your time every single session.'},{n:'Lateral Bound',s:4,r:'10/side',rest:'60s',note:'Explosive lateral push. Land and immediately go.'},{n:'Shadowboxing Fast',s:6,r:'90s',rest:'45s',note:'Maximum hand speed. Light as air. No tension.'},{n:'Jump Rope',s:5,r:'1 min',rest:'45s',note:'Fast singles. Rhythm then speed.'}]},
+  2:{n:'SPEED CIRCUITS',f:'Chain explosive movements. Train the nervous system for sustained output.',
+   gym:[{n:'Hang Power Snatch',s:4,r:'5',rest:'2 min',note:'Faster than Phase 1. Catch high and tight.'},{n:'Sprint 60m',s:6,r:'1',rest:'2 min',note:'Longer distance. Same all-out intensity.'},{n:'Plyo Pushup',s:4,r:'10',rest:'60s',note:'Hands leave floor. Chest to floor every rep.'},{n:'Sprint Intervals',s:8,r:'20s sprint/40s walk',rest:'—',note:'Full effort throughout sprint phase.'},{n:'Hurdle Hop',s:4,r:'8',rest:'90s',note:'Fast two-foot hops. Minimal air time.'}],
+   none:[{n:'Sprint 60m',s:6,r:'1',rest:'2 min',note:'All-out. Track every time you run.'},{n:'Plyometric Pushup',s:5,r:'10',rest:'60s',note:'Height is the goal each rep.'},{n:'Clapping Pushup',s:4,r:'10',rest:'60s',note:'Speed and power combined.'},{n:'Speed Jump Rope',s:6,r:'90s',rest:'45s',note:'High turnover. Double unders attempted.'},{n:'Agility Ladder',s:5,r:'4 drills',rest:'45s',note:'Feet fast. Memorize the patterns.'}]},
+  3:{n:'INFINITE TECHNIQUE',f:'Peak speed across all planes. Your body becomes unpredictable.',
+   gym:[{n:'Hang Snatch Max Speed',s:5,r:'3',rest:'2 min',note:'Neural speed training. This is the work.'},{n:'Sprint 100m',s:6,r:'1',rest:'3 min',note:'You should be consistently improving.'},{n:'Reactive Box Jump',s:5,r:'8',rest:'90s',note:'Jump on visual cue. Minimize reaction delay.'},{n:'Sprint-Agility-Sprint',s:5,r:'3',rest:'2 min',note:'Sprint → ladder → sprint. Zero break.'},{n:'Reaction Sprint',s:8,r:'20m on cue',rest:'90s',note:'Partner calls the start. Train the reaction itself.'}],
+   none:[{n:'100m Sprint',s:6,r:'1',rest:'3 min',note:'Full open space. Maximum effort.'},{n:'Reactive Broad Jump',s:5,r:'5',rest:'60s',note:'On cue: react and jump instantly.'},{n:'Explosive Burpee Circuit',s:6,r:'10',rest:'45s',note:'Minimize rest. Maximum output every rep.'},{n:'Clapping Pushup + Sprint',s:5,r:'8 push → 20m sprint',rest:'2 min',note:'Explosive upper into immediate full sprint.'},{n:'Agility Speed Pattern',s:6,r:'30s max',rest:'30s',note:'Four cones. Absolute maximum circuit speed.'}]}}
+},
+{id:'zack',name:'Zack Lee',title:'The Iron Boxer',init:'Z',color:'#3b82f6',glow:'rgba(59,130,246,.35)',
+ vibe:'"Compact, explosive, and immovable — a specialized human tool for boxing and taking punishment."',
+ physique:'Boxer\'s Shoulders — overdeveloped deltoids and upper back for rapid-fire punching. After Gongseob Ji training, transitioned to Iron Boxing — physique became noticeably denser. Core and obliques incredibly thick to absorb body shots. "Sturdy" vs his earlier lithe speed-boxer frame.',
+ tags:['BOXING','IRON BODY','IRON FORTRESS','COUNTER KO'],
+ specialty:'Speed, iron body conditioning and a one-hit-KO counter punch from Gongseob Ji.',
+ proj:['30D — Boxing fundamentals sharp. Shoulders noticeably developed.','60D — Iron body conditioning initiated. Footwork becomes instinct.','90D — Iron Fortress achieved. You can take the hit and return the counter.'],
+ nut:{goal:'Lean Athletic Mass & Stamina',calf:34,
+  macros:['Protein 2g/kg — chicken thighs, eggs, canned tuna, pork loin','Carbs 4g/kg — oats, rice, sweet potato, bread, bananas','Fats 0.9g/kg — eggs, peanut butter, cooking oil'],
+  meals:[{t:'MORNING',f:'Oats with banana and peanut butter + 2 eggs. Affordable and complete.',b:'~$1.30'},
+         {t:'PRE-WO',f:'Rice cake or bread + peanut butter. Simple. Never overthink pre-workout fuel.',b:'~$0.50'},
+         {t:'POST-WO',f:'Canned tuna + rice + cooked greens. Budget and effective.',b:'~$2.00'},
+         {t:'DINNER',f:'Chicken thighs or pork + sweet potato or rice + any salad vegetables.',b:'~$2.50'}],
+  avoid:'Excess body fat. A boxer needs to be lean and agile. Maintain, never bulk blindly.'},
+ phases:{
+  1:{n:"BOXER'S FOUNDATION",f:'Shoulder strength, cardiovascular base and footwork mechanics.',
+   gym:[{n:'Overhead Press',s:4,r:'8',rest:'90s',note:"The boxer's primary strength movement."},{n:'Cable Lateral Raise',s:3,r:'15',rest:'60s',note:'Shoulder stability and width development.'},{n:'Jump Rope',s:5,r:'3 min rounds',rest:'60s',note:"The boxer's staple. Rhythm comes first."},{n:'Shadowboxing',s:5,r:'2 min rounds',rest:'45s',note:'Footwork patterns. Stay on the toes.'},{n:'Neck Isometrics',s:3,r:'15 each plane',rest:'60s',note:'Protect your chin. This is non-negotiable.'}],
+   none:[{n:'Pike Pushup',s:4,r:'15',rest:'60s',note:'Deltoid emphasis. Vertical pressing without equipment.'},{n:'Jump Rope',s:5,r:'3 min rounds',rest:'60s',note:"The boxer's staple. Always."},{n:'Shadowboxing',s:6,r:'2 min rounds',rest:'45s',note:'Head movement + footwork drills.'},{n:'Pushup',s:5,r:'20',rest:'60s',note:'Foundation upper body pressing.'},{n:'Neck Bridge',s:3,r:'30s',rest:'60s',note:'Protect the chin. Critical for boxing.'}]},
+  2:{n:'IRON BOXING',f:'Iron body conditioning combined with boxing power output.',
+   gym:[{n:'Overhead Press Heavy',s:4,r:'5',rest:'2 min',note:'Add load. Shoulder strength = punch power.'},{n:'Heavy Bag 1-2-Slip',s:6,r:'3 min rounds',rest:'60s',note:'Jab > cross > slip head. Repeat for 3 minutes.'},{n:'Barbell Shrug',s:4,r:'12',rest:'60s',note:'Trap density for iron body structure.'},{n:'Iron Body Forearms',s:4,r:'20 strikes',rest:'60s',note:'Against firm surface. Build gradually over months.'},{n:'Sprint 200m',s:6,r:'1',rest:'2 min',note:'Boxing cardio base. Track your time.'}],
+   none:[{n:'Handstand Pushup',s:4,r:'8',rest:'2 min',note:'More reps than Phase 1. Progress.'},{n:'Shadowboxing Combinations',s:6,r:'3 min rounds',rest:'45s',note:'6-punch minimum combos. Head movement.'},{n:'Jump Rope Doubles',s:5,r:'2 min',rest:'60s',note:'Double unders sustained throughout.'},{n:'Iron Forearm Conditioning',s:4,r:'25 strikes',rest:'60s',note:'Build bone density. Months of consistency.'},{n:'Sprint 200m',s:6,r:'1',rest:'2 min',note:'Full effort every sprint.'}]},
+  3:{n:'IRON FORTRESS PROTOCOL',f:'Peak boxing conditioning and maximum body hardness.',
+   gym:[{n:'Push Press',s:5,r:'5',rest:'2 min',note:'Explosive overhead. Punch power peak.'},{n:'Heavy Bag War Rounds',s:8,r:'3 min rounds',rest:'45s',note:'Maximum intensity. This is the fortress.'},{n:'Plyometric Pushup',s:4,r:'12',rest:'60s',note:'Explosive punch-speed training.'},{n:'Iron Body Full Circuit',s:5,r:'25 strikes/area',rest:'60s',note:'Shoulders, forearms, ribs — systematically.'},{n:'Sprint 400m',s:4,r:'1',rest:'3 min',note:'Boxing conditioning absolute peak.'}],
+   none:[{n:'Handstand Pushup Peak',s:4,r:'max',rest:'2 min',note:'Wall if needed. Work toward freestanding.'},{n:'Shadowboxing Iron Flow',s:8,r:'3 min rounds',rest:'45s',note:'Maximum intensity throughout.'},{n:'Jump Rope Speed Peak',s:6,r:'2 min',rest:'45s',note:'Maximum turnover speed sustained.'},{n:'Iron Body Full',s:5,r:'25 strikes/area',rest:'60s',note:'Complete body hardening circuit.'},{n:'Sprint 400m',s:4,r:'1',rest:'3 min',note:'Peak conditioning run. Time it.'}]}}
+},
+{id:'goo',name:'Goo Kim',title:'The Lean Weapon',init:'G',color:'#84cc16',glow:'rgba(132,204,22,.35)',
+ vibe:'"Lanky, deceptive, and sharp — his goofy appearance hides a lethal truth."',
+ physique:'Very tall at 191cm with a softer, smoother look than other fighters. Not hyper-defined like Vasco or Daniel — which makes his superhuman strength terrifying. Wiry musculature: long muscles built for range of motion and lethal weapon speed rather than raw pressing power.',
+ tags:['KUMDO','MOONLIGHT STYLE','WEAPON GENIUS','WRIST SPEED'],
+ specialty:'Weapon genius. A stick, sword or scrap metal becomes a top-tier threat in his hands.',
+ proj:['30D — Wrist strength and grip conditioning established.','60D — Moonlight drills dramatically improve hand speed and coordination.','90D — Weapon Master physique: flexible, precise, devastatingly fast.'],
+ nut:{goal:'Lean Mobility & Coordination',calf:31,
+  macros:['Protein 1.8g/kg — fish, chicken, eggs, beans and lentils — variety over expensive cuts','Carbs 3.5g/kg — brown rice, sweet potato, fruit, oats','Fats 1g/kg — sunflower or vegetable oil, eggs, peanuts if available'],
+  meals:[{t:'MORNING',f:'2 eggs + fruit + green tea or black coffee.',b:'~$1.00'},
+         {t:'LUNCH',f:'Canned fish or chicken + brown rice + salad or cooked greens.',b:'~$2.00'},
+         {t:'PRE-WO',f:'Banana + small handful of peanuts. Light fuel. Never train bloated.',b:'~$0.40'},
+         {t:'DINNER',f:'Chicken or pork + sweet potato or rice + steamed greens.',b:'~$2.50'}],
+  avoid:'Excess carbs before training. Bloating kills fluid weapon movement. Stay light.'},
+ phases:{
+  1:{n:'MOBILITY FOUNDATION',f:'Wrist strength, shoulder flexibility and Kumdo footwork mechanics.',
+   gym:[{n:'Wrist Roller',s:4,r:'3 rollovers',rest:'60s',note:'Forearm and wrist conditioning. Go slow.'},{n:'Face Pull',s:4,r:'15',rest:'60s',note:'Shoulder external rotation. Blade shoulder health.'},{n:'Pull-Up Full Range',s:4,r:'8',rest:'90s',note:'Full dead hang. Shoulder mobility priority.'},{n:'Stick Form Drill',s:5,r:'5 min',rest:'60s',note:'Broomstick. Learn 8 basic directional cuts.'},{n:'Single-Leg Balance',s:4,r:'30s/leg',rest:'60s',note:'Footwork balance training. Kumdo starts here.'}],
+   none:[{n:'Wrist Circles',s:3,r:'30 each direction',rest:'30s',note:'Mobility warmup. Do this before everything.'},{n:'Stick Form Drill',s:5,r:'5 min',rest:'60s',note:'Broomstick. 8 directional cuts. Learn them.'},{n:'Pull-Up',s:4,r:'8',rest:'90s',note:'Full dead hang for shoulder health.'},{n:'Shoulder Dislocate',s:3,r:'10',rest:'60s',note:'Broomstick behind back, rotate overhead slowly.'},{n:'Footwork Drill',s:5,r:'3 min',rest:'45s',note:'Advance-retreat-advance pattern. Stay light.'}]},
+  2:{n:'MOONLIGHT CIRCUITS',f:'Speed, precision and blade mastery. A stick becomes dangerous.',
+   gym:[{n:'Wrist Roller Heavy',s:4,r:'5 rollovers',rest:'60s',note:'Increase weight from Phase 1.'},{n:'Cable Pull-Down Wide',s:4,r:'12',rest:'60s',note:'Lat width for sword reach and range.'},{n:'Overhead Press',s:4,r:'8',rest:'90s',note:'Overhead mobility and shoulder push strength.'},{n:'Speed Stick Drill',s:5,r:'3 min',rest:'45s',note:'Fast cuts. Moonlight patterns: 1-2-3-cut.'},{n:'Wrist Rotation Loaded',s:4,r:'20 each direction',rest:'60s',note:'Light dumbbell rotation. Wrist joint strength.'}],
+   none:[{n:'Stick Speed Drill',s:6,r:'3 min',rest:'45s',note:'Fast as possible. Moonlight cuts.'},{n:'Pull-Up Progression',s:4,r:'10',rest:'90s',note:'Progress from Phase 1 rep count.'},{n:'Wrist Push-Up',s:3,r:'10',rest:'60s',note:'Pushup on knuckles shifting to wrist top.'},{n:'Handstand Hold',s:3,r:'20s',rest:'90s',note:'Wrist compression strength. Build hold time.'},{n:'Footwork + Strike Combo',s:5,r:'3 min',rest:'45s',note:'Advance then strike. Retreat then guard.'}]},
+  3:{n:'WEAPON MASTER PROTOCOL',f:'Peak wrist strength, mobility and Moonlight Sword speed.',
+   gym:[{n:'Wrist Roller Max',s:5,r:'5 rollovers',rest:'60s',note:'Maximum load. Forearm density peak.'},{n:'Pull-Up L-Sit Hold',s:4,r:'8 + 15s hold',rest:'2 min',note:'Pull up, hold L position at the top.'},{n:'Moonlight Speed Full',s:8,r:'3 min',rest:'45s',note:'Maximum speed cuts. All 8 directions. Full.'},{n:'Balance Drill',s:4,r:'2 min',rest:'60s',note:'Unstable surface if possible. Footwork mastery.'},{n:'Full Shoulder Circuit',s:3,r:'15 each',rest:'60s',note:'Face pull + raise + rotation. All planes.'}],
+   none:[{n:'One-Arm Stick Drill',s:5,r:'3 min/arm',rest:'60s',note:'Force single-arm precision and control.'},{n:'Pull-Up Slow',s:4,r:'8',rest:'2 min',note:'5 seconds up. 5 seconds down. Deliberate.'},{n:'Wrist Pushup Peak',s:4,r:'12',rest:'60s',note:'Wrist pushups on a hard floor.'},{n:'Handstand Hold Long',s:3,r:'40s',rest:'90s',note:'Work toward freestanding. Time every hold.'},{n:'Moonlight Speed Peak',s:8,r:'3 min',rest:'45s',note:'Maximum velocity. All 8 cuts. No pause.'}]}}
+},
+{id:'eli',name:'Eli Jang',title:'The Wild Instinct',init:'E',color:'#22c55e',glow:'rgba(34,197,94,.35)',
+ vibe:'"An apex predator — he moves in ways that feel inhuman."',
+ physique:'Lean and nimble with a prominent scar on his chest. Feral aesthetic — incredibly flexible with a shredded look emphasizing agility. Core and spinal erectors highly developed from moving in inhuman ways. Not about size — about total body control. Every movement becomes a weapon.',
+ tags:['ANIMAL INSTINCT','BATON','WILDNESS','FERAL MOVEMENT'],
+ specialty:'Animalistic fighting using every part of the body and environment — instinct over logic.',
+ proj:['30D — Animal flow unlocked. Ground movement coordination improves dramatically.','60D — Predatory instincts sharpened. Pressure point awareness develops.','90D — Wild Thing physique. Lean, explosive, supremely adaptable.'],
+ nut:{goal:'Lean Predatory Performance',calf:30,
+  macros:['Protein 2g/kg — canned fish, eggs, chicken, beans — whatever is cheapest','Carbs 3g/kg — fruit, oats, rice (lean and agile — no excess here)','Fats 1g/kg — eggs, peanut butter, sunflower oil'],
+  meals:[{t:'MORNING',f:'3 eggs + fruit salad or a banana + green tea.',b:'~$1.00'},
+         {t:'PRE-WO',f:'A few dates or a banana + small handful of peanuts. Light.',b:'~$0.40'},
+         {t:'POST-WO',f:'Canned sardines or tuna + rice or potato.',b:'~$1.80'},
+         {t:'DINNER',f:'Chicken or fish + brown rice + salad greens or whatever vegetables are on sale.',b:'~$2.50'}],
+  avoid:'Excess body weight. The Wild Thing is lean. Period. No surplus. Every kilo matters.'},
+ phases:{
+  1:{n:'ANIMAL FOUNDATION',f:'Master ground-based movement. Your body becomes an animal.',
+   gym:[{n:'Romanian Deadlift',s:3,r:'10',rest:'90s',note:'Posterior chain for animal power generation.'},{n:'Pull-Up',s:4,r:'8',rest:'90s',note:'Upper body pulling. Climb anything, anywhere.'},{n:'Bear Crawl',s:4,r:'20m',rest:'60s',note:'Opposite limbs. Low and controlled breathing.'},{n:'Crab Walk',s:4,r:'20m',rest:'60s',note:'Hips up. Move in every direction.'},{n:'Baton Strike Drill',s:5,r:'3 min',rest:'45s',note:'Two sticks or pens. Strike pattern practice.'}],
+   none:[{n:'Bear Crawl',s:5,r:'20m',rest:'60s',note:'Low, opposite limbs, controlled breathing.'},{n:'Crab Walk',s:4,r:'20m',rest:'60s',note:'Hips high. Move in all directions.'},{n:'Pull-Up',s:4,r:'8',rest:'90s',note:'Full hang. The essential animal pull.'},{n:'Baton Drill',s:5,r:'3 min',rest:'45s',note:'Two sticks. Strike, parry, flow. Natural.'},{n:'L-Sit Hold',s:3,r:'15s',rest:'45s',note:'Core compression for animal ground patterns.'}]},
+  2:{n:'PREDATOR CIRCUITS',f:'Full animal patterns combined with explosive striking speed.',
+   gym:[{n:'Power Clean',s:4,r:'5',rest:'2 min',note:'Explosive. Pure animal power generation.'},{n:'Weighted Pull-Up',s:4,r:'6',rest:'2 min',note:'Dominant pull. Add load.'},{n:'Animal Flow Complex',s:5,r:'3 min',rest:'60s',note:'Bear > crab > scorpion > lateral ape. Flow.'},{n:'Sprint + Direction Change',s:6,r:'20m + cut',rest:'90s',note:'Change direction on instinct. Predator mode.'},{n:'Rotational MB Slam',s:4,r:'10/side',rest:'60s',note:'Explosive rotation. Pure animal power.'}],
+   none:[{n:'Animal Flow Full',s:5,r:'3 min',rest:'60s',note:'Bear > crab > scorpion > monkey. No breaks.'},{n:'Clapping Pushup',s:4,r:'10',rest:'60s',note:'Explosive upper body.'},{n:'Sprint + Direction Cut',s:6,r:'20m',rest:'90s',note:'Sprint, cut the direction, sprint back.'},{n:'Explosive Pull-Up',s:4,r:'6',rest:'90s',note:'Pull as fast as possible each rep.'},{n:'Baton Combo Drill',s:6,r:'3 min',rest:'45s',note:'Strike combos. 1-2-3 pattern. Fast.'}]},
+  3:{n:'WILD THING PROTOCOL',f:'Complete adaptability. No terrain or position is a disadvantage.',
+   gym:[{n:'Barbell Wild Complex',s:5,r:'5 each',rest:'3 min',note:'Clean > Squat > Press > RDL. No breaks ever.'},{n:'Muscle-Up',s:4,r:'5',rest:'2 min',note:'Full body transition. Animal in motion.'},{n:'Animal Flow Peak',s:8,r:'3 min',rest:'45s',note:'Maximum intensity. All patterns. Wild.'},{n:'Reactive Sprint',s:6,r:'20m on cue',rest:'90s',note:'Move on instinct. Train the animal reaction.'},{n:'Baton Mastery Circuit',s:6,r:'3 min',rest:'45s',note:'Full speed. Pressure points + flow combined.'}],
+   none:[{n:'Animal Flow Maximum',s:8,r:'3 min',rest:'45s',note:'Peak intensity. All patterns combined.'},{n:'One-Arm Pushup',s:4,r:'6/arm',rest:'90s',note:'Wild instinct. Adapt the movement as needed.'},{n:'Muscle-Up Progression',s:4,r:'max',rest:'2 min',note:'Work toward the strict rep.'},{n:'Sprint + Animal Flow',s:6,r:'20m sprint + 30s flow',rest:'90s',note:'Speed then ground movement combined.'},{n:'Baton Peak',s:8,r:'3 min',rest:'45s',note:'Full speed. No patterns. Pure instinct.'}]}}
+},
+{id:'sinu',name:'Sinu Han',title:'The God of Combat',init:'S',color:'#8b5cf6',glow:'rgba(139,92,246,.35)',
+ vibe:'"A blur of muscle and scars — he strikes from where you cannot see."',
+ physique:'Arguably the lowest body fat percentage among the leaders. Body is a roadmap of scars from his Circus years — extreme durability in a slender frame. Lean with powerful legs optimized for Invisible Attacks that require striking from blind spots at subsonic speeds. Left eye is cloudy white from injury.',
+ tags:['INVISIBLE ATTACKS','BLIND SPOT','SUBSONIC SPEED','GOD OF COMBAT'],
+ specialty:'Attacks faster than human perception can process. He strikes from blind spots the eye cannot follow.',
+ proj:['30D — Peripheral vision measurably improves. Movement becomes light.','60D — Invisible attack timing begins to develop. Speed is becoming real.','90D — God of Combat state: you attack from where they cannot see.'],
+ nut:{goal:'Neural Speed & Lean Recovery',calf:31,
+  macros:['Protein 1.9g/kg — canned fish, eggs, chicken, any legumes for variety','Carbs 3.5g/kg — white rice, banana, oats, potatoes (fast-digesting priority)','Fats 1g/kg — eggs, peanut butter, sunflower oil — omega-3 whenever possible'],
+  meals:[{t:'MORNING',f:'3 eggs + fruit + green tea or black coffee.',b:'~$1.00'},
+         {t:'PRE-WO',f:'Banana + dates + water. Extremely light before speed training. Never train heavy.',b:'~$0.40'},
+         {t:'POST-WO',f:'Canned tuna or sardines + white rice. Fast absorption is the priority.',b:'~$1.80'},
+         {t:'DINNER',f:'Chicken or pork + brown rice + any cheap greens available.',b:'~$2.50'}],
+  avoid:'Heavy meals before speed training. Neural speed requires a light, clear body to perform.'},
+ phases:{
+  1:{n:'BLIND SPOT FOUNDATION',f:'Peripheral awareness, light-footed speed and reaction time.',
+   gym:[{n:'Sprint 20m',s:10,r:'1',rest:'90s',note:'Maximum acceleration. All-out every single rep.'},{n:'Lateral Shuffle',s:5,r:'20m',rest:'60s',note:'Explosive side-to-side movement.'},{n:'Single-Leg Balance',s:4,r:'30s/leg',rest:'45s',note:'Compensate for the blind side. Find center.'},{n:'Peripheral Vision Drill',s:5,r:'2 min',rest:'45s',note:'Track moving objects in periphery while focused center.'},{n:'Reaction Catch',s:5,r:'30s',rest:'45s',note:'Unpredictable bounce or movement. React on instinct.'}],
+   none:[{n:'Sprint 20m',s:10,r:'1',rest:'90s',note:'Pure acceleration. Track your reaction start time.'},{n:'Blind Side Shadowboxing',s:6,r:'2 min',rest:'45s',note:'Cover one eye. Strike from the open side only.'},{n:'Lateral Bound',s:5,r:'8/side',rest:'60s',note:'Explosive side push. Land and immediately react.'},{n:'Peripheral Awareness Drill',s:5,r:'2 min',rest:'45s',note:'Focus center, track outer edge of field of vision.'},{n:'Jump Rope',s:5,r:'2 min',rest:'60s',note:'Light feet. Coordination and rhythm base.'}]},
+  2:{n:'INVISIBLE ATTACK PROTOCOL',f:'Strike from blind spots. Build speed beyond conscious perception.',
+   gym:[{n:'Sprint 40m',s:8,r:'1',rest:'2 min',note:'Longer distance. Speed sustained across the full run.'},{n:'Hang Power Snatch',s:4,r:'5',rest:'2 min',note:'Full body explosive speed generation.'},{n:'Box Jump Reactive',s:5,r:'6',rest:'90s',note:'Jump on visual cue. Minimize reaction delay.'},{n:'Side Shuffle to Sprint',s:5,r:'20m + 20m',rest:'90s',note:'Lateral to linear. Explosive transition.'},{n:'Blind Side Strike Drill',s:6,r:'2 min',rest:'45s',note:"Attack from the opponent's 90° angle only."}],
+   none:[{n:'Sprint 40m',s:8,r:'1',rest:'2 min',note:'Track and improve consistently every session.'},{n:'Invisible Attack Shadowboxing',s:6,r:'2 min',rest:'45s',note:'Strike from the blind side every single time.'},{n:'Reactive Broad Jump',s:5,r:'5',rest:'60s',note:'On cue: react and jump instantly. No delay.'},{n:'Agility Ladder Speed',s:5,r:'max speed',rest:'60s',note:'Fastest footwork possible. Pattern precision.'},{n:'Jump Rope Fast',s:5,r:'90s',rest:'45s',note:'Maximum turnover. Light as air throughout.'}]},
+  3:{n:'GOD OF COMBAT PROTOCOL',f:'Peak speed and perception. Attack from where they cannot see.',
+   gym:[{n:'Sprint 60m',s:6,r:'1',rest:'3 min',note:'Maximum speed. Record every rep time.'},{n:'Reactive Sprint Drill',s:8,r:'20m on cue',rest:'90s',note:'Move before you consciously process the signal.'},{n:'Hang Snatch Max Speed',s:5,r:'3',rest:'2 min',note:'Neural speed output. Full explosive effort.'},{n:'Blind Spot Combo Drill',s:8,r:'2 min',rest:'45s',note:'Strike from 90° and 180° angles only. Always.'},{n:'Depth Jump to Sprint',s:5,r:'5',rest:'2 min',note:'Drop from box, explode into 20m sprint. No pause.'}],
+   none:[{n:'60m Sprint',s:6,r:'1',rest:'3 min',note:'All-out. This is your peak. No holding back.'},{n:'Reactive Sprint',s:8,r:'20m on cue',rest:'90s',note:'Move on perception, not conscious processing.'},{n:'Blind Spot Shadowboxing',s:8,r:'2 min',rest:'45s',note:'100% blind side strikes only. Every time.'},{n:'Agility God Mode',s:6,r:'max speed',rest:'45s',note:'Fastest footwork of the entire 90 days.'},{n:'Invisible Attack Flow',s:6,r:'3 min',rest:'45s',note:'Seamlessly flow from one blind side strike to the next.'}]}}
+}
+];
+
+/* ════════════════════════════════════════
+   RANKS & STORE DATA
+════════════════════════════════════════ */
+const RANKS=['E','D','C','B','A','S','S+'];
+const RNAMES={E:'NOVICE',D:'INITIATE',C:'FIGHTER',B:'WARRIOR',A:'ELITE',S:'APEX','S+':'LEGEND'};
+const RXP={E:0,D:150,C:350,B:650,A:1050,S:1600,'S+':2500};
+
+const SHOP=[
+  // ── COMMON ──
+  {id:'cheat',   n:'Cheat Meal Pass',      desc:'Suspend all nutrition rules for 1 day. You earned it.',        cost:50,  icon:'🍔', key:'cheatPass',   con:true,  tier:'COMMON'},
+  {id:'coin2x',  n:'Coin Amplifier',       desc:'Your next completed workout earns 2× coins (20🪙 instead of 10).',cost:60, icon:'💰', key:'coinBoost',   con:true,  tier:'COMMON'},
+  {id:'novobrief',n:'NOVO Deep Brief',     desc:'NOVO delivers extended intelligence on your chosen path.',      cost:75,  icon:'🤖', key:'novoBrief',   con:true,  tier:'COMMON'},
+  // ── UNCOMMON ──
+  {id:'rest',    n:'Rest Day Token',       desc:'Protect your streak for 24 hours without training.',           cost:100, icon:'🛡', key:'restToken',   con:true,  tier:'UNCOMMON'},
+  {id:'shield48',n:'Streak Shield',        desc:'48-hour streak protection — covers an entire weekend.',         cost:170, icon:'🔰', key:'shield48',    con:true,  tier:'UNCOMMON'},
+  {id:'dbl',     n:'Double XP Shard',      desc:'Your next workout awards 2× XP. Stack after a hard session.',  cost:150, icon:'💠', key:'dblXP',       con:true,  tier:'UNCOMMON'},
+  {id:'exfocus', n:'Exercise Focus Mode',  desc:'Tomorrow\'s protocol is trimmed to 3 core movements. Quality over volume.', cost:120, icon:'🎯', key:'focusMode', con:true, tier:'UNCOMMON'},
+  // ── RARE ──
+  {id:'trp',     n:'Triple XP Crystal',    desc:'Your next workout awards 3× XP. Use before a max effort session.', cost:300, icon:'💎', key:'trpXP',   con:true,  tier:'RARE'},
+  {id:'pathswap',n:'Path Swap Token',      desc:'Switch your character without resetting your day progress.',    cost:280, icon:'⚔',  key:'pathSwap',   con:true,  tier:'RARE'},
+  {id:'phase2',  n:'Phase Accelerator',    desc:'Access Phase 2 workout intensity regardless of current day.',   cost:240, icon:'⚡', key:'phaseUp',    con:true,  tier:'RARE'},
+  {id:'coinbomb',n:'Coin Bomb',            desc:'Instantly receive 75🪙 credited to your wallet.',               cost:200, icon:'💣', key:'coinBomb',   con:true,  tier:'RARE'},
+  // ── EPIC ──
+  {id:'heat',    n:'Heat Mode Badge',      desc:"Samuel's Heat Mode — permanent aesthetic unlock on your profile.", cost:350, icon:'🔥', key:'heatMode',  con:false, tier:'EPIC'},
+  {id:'whiteghost',n:'Shiro Oni Seal',     desc:"Gun Park's Shiro Oni mark — permanent rank display badge.",     cost:400, icon:'👁', key:'shiroSeal',  con:false, tier:'EPIC'},
+  // ── LEGENDARY ──
+  {id:'ironbadge',n:'Iron Constitution',   desc:'Awarded for completing 30 total workouts. Permanent profile trophy.', cost:500, icon:'🏆', key:'ironBadge', con:false, tier:'LEGENDARY'},
+  {id:'splus',   n:'Legend\'s Crest',      desc:'The ultimate prestige item. Proves you reached S+ rank.',       cost:800, icon:'👑', key:'legendCrest', con:false, tier:'LEGENDARY'},
+];
+
+const GACHA=[
+  {tier:'common',lbl:'🪙 +20 Bonus Coins',type:'coins',val:20,w:25},
+  {tier:'common',lbl:'⚡ +8 Bonus XP',type:'xp',val:8,w:20},
+  {tier:'common',lbl:'🍔 Cheat Meal Pass',type:'item',key:'cheatPass',w:18},
+  {tier:'common',lbl:'💪 Motivational Surge',type:'nothing',w:12},
+  {tier:'rare',lbl:'🛡 Rest Day Token',type:'item',key:'restToken',w:10},
+  {tier:'rare',lbl:'🪙 +50 Bonus Coins',type:'coins',val:50,w:7},
+  {tier:'rare',lbl:'💠 Double XP Shard',type:'item',key:'dblXP',w:5},
+  {tier:'epic',lbl:'💎 Triple XP Crystal',type:'item',key:'trpXP',w:2},
+  {tier:'epic',lbl:'🪙 +100 Coins',type:'coins',val:100,w:1},
+  {tier:'legend',lbl:'👑 LEGEND SHARD +150 XP',type:'xp',val:150,w:.5},
+];
+const RICONS=['🔥','⚡','💠','🛡','🍔','🪙','💪','🔮','⚔','💎','👑','🌟','◆','⬡','🎯','💫'];
+
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+const DEF={
+  name:'',w:null,h:null,bmi:null,bcat:'normal',eq:'none',cid:null,
+  day:1,streak:0,best:0,lastDate:null,coins:0,xp:0,total:0,
+  inv:{cheatPass:0,restToken:0,dblXP:0,trpXP:0,heatMode:false,ironBadge:false,shiroSeal:false,legendCrest:false,coinBoost:0,novoBrief:0,focusMode:0,shield48:0,pathSwap:0,phaseUp:false,coinBomb:0},
+  log:[],dbl:false,trp:false,cheat:false,
+  travel:false,travelDays:0,travelStart:null,travelOrigEq:'gym'
+};
+let S={...DEF};
+const SK='sysmax_v3';
+function save(){localStorage.setItem(SK,JSON.stringify(S))}
+function load(){try{const d=localStorage.getItem(SK);if(d)S={...DEF,...JSON.parse(d)}}catch(e){}}
+const gc=id=>CHARS.find(c=>c.id===id);
+const phase=d=>d<=30?1:d<=60?2:3;
+const tod=()=>new Date().toISOString().split('T')[0];
+const rank=xp=>{let r='E';for(const k of RANKS){if(xp>=RXP[k])r=k;}return r;};
+
+// Returns effective equipment, respecting travel mode and expiry
+function activeEq(){
+  if(!S.travel)return S.eq;
+  // Check if travel has expired (days > 0 means fixed duration)
+  if(S.travelDays>0&&S.travelStart){
+    const start=new Date(S.travelStart);
+    const now=new Date();
+    const daysPassed=Math.floor((now-start)/(1000*60*60*24));
+    if(daysPassed>=S.travelDays){
+      // Auto-expire travel mode
+      S.travel=false;S.eq=S.travelOrigEq;save();
+      return S.eq;
+    }
+    S._travelDaysLeft=S.travelDays-daysPassed;
+  }
+  return 'none'; // travel = bodyweight always
+}
+const CHAR_THEMES={gun:'theme-oni',daniel:'theme-azure',samuel:'theme-ember',vasco:'theme-fire',jake:'theme-violet',johan:'theme-steel',zack:'theme-cobalt',goo:'theme-lime',eli:'theme-green',sinu:'theme-purple'};
+function setCC(c){
+  document.documentElement.style.setProperty('--cc',c.color);
+  document.documentElement.style.setProperty('--cg',c.glow);
+  // Apply character theme class to body
+  const body=document.body;
+  Object.values(CHAR_THEMES).forEach(t=>body.classList.remove(t));
+  if(CHAR_THEMES[c.id])body.classList.add(CHAR_THEMES[c.id]);
+  // Retune particle canvas color
+  if(window._bgCtxColor!==undefined)window._bgCtxColor=c.color;
+  // Update mist color
+  document.querySelectorAll('.mist').forEach(m=>{m.style.background=`radial-gradient(ellipse 55% 35% at 30% 50%,${c.glow.replace('.35','.05')} 0%,transparent 70%)`;});
+}
+
+/* ════════════════════════════════════════
+   NAVIGATION — with page wipe
+════════════════════════════════════════ */
+const MAIN=['dashboard','workout','nutrition','history','store','profile'];
+let _wiping=false;
+function nav(id,instant=false){
+  snd('nav');
+  if(instant){_doNav(id);return;}
+  if(_wiping)return;
+  _wiping=true;
+  const wipe=document.getElementById('page-wipe');
+  wipe.classList.add('out');
+  setTimeout(()=>{
+    _doNav(id);
+    wipe.classList.remove('out');
+    wipe.classList.add('in');
+    setTimeout(()=>{wipe.classList.remove('in');_wiping=false;},260);
+  },220);
+}
+function _doNav(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc-'+id)?.classList.add('active');
+  const m=MAIN.includes(id);
+  const bn=document.getElementById('bnav');
+  m?bn.classList.add('vis'):bn.classList.remove('vis');
+  document.querySelectorAll('.nb,.sb-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('bnav-'+id)?.classList.add('active');
+  document.getElementById('snav-'+id)?.classList.add('active');
+  const sb=document.getElementById('sidebar');
+  sb.style.display=(m&&S.cid)?'':'none';
+  if(id==='dashboard'){rdash();novoScreen('dashboard');}
+  if(id==='workout'){rworkout();novoScreen('workout');}
+  if(id==='nutrition'){rnutri();novoScreen('nutrition');}
+  if(id==='history'){rhist();novoScreen('history');}
+  if(id==='store'){rstore();novoScreen('store');}
+  if(id==='profile'){rprofile();novoScreen('profile');}
+  if(id==='char-select'){buildCar();} // ← fix: always rebuild carousel on entry
+  // HUD visibility
+  const showHudOn=m&&S.cid;
+  const hl=document.getElementById('hud-layer');
+  const tw=document.getElementById('ticker-wrap');
+  const na=document.getElementById('novo-avatar');
+  if(hl)hl.style.opacity=showHudOn?'1':'0';
+  if(tw)tw.style.opacity=showHudOn?'1':'0';
+  if(na){showHudOn?na.classList.add('vis','float'):na.classList.remove('vis','float');}
+}
+
+/* ════════════════════════════════════════
+   BOOT
+════════════════════════════════════════ */
+function boot(){
+  load();
+  const lines=[
+    {t:'> SYSTEM BOOT v3.0 — SYS//MAX INITIATED...',cls:'ok',d:300},
+    {t:'> NEURAL TRAINING MODULE LOADED...',cls:'ok',d:750},
+    {t:'> SCANNING PLAYER DATA...',cls:'',d:1150},
+    {t:'> 9 LOOKISM PATHS AVAILABLE...',cls:'ok',d:1550},
+    {t:'> SOUND ENGINE ONLINE...',cls:'ok',d:1900},
+    {t:'> GACHA SYSTEM READY...',cls:'ok',d:2200},
+    {t:'> NOVO COMPANION — STANDING BY...',cls:'ok',d:2500},
+    {t:'> ALL SYSTEMS NOMINAL.',cls:'ok',d:2800},
+  ];
+  const cl=document.getElementById('boot-lines');
+  setTimeout(()=>document.getElementById('bfill').style.width='100%',400);
+  lines.forEach(l=>setTimeout(()=>{
+    const e=document.createElement('div');e.className='boot-line vis '+l.cls;e.textContent=l.t;cl.appendChild(e);
+  },l.d));
+  setTimeout(()=>{document.getElementById('bstatus').innerHTML='> PLAYER READY<span class="cur"></span>'},2900);
+  setTimeout(()=>{
+    buildTicker();initCursor();initBgCanvas();initTrailCanvas();
+    if(S.cid){setCC(gc(S.cid));rdash();nav('dashboard',true);}
+    else if(S.w){buildCar();nav('char-select',true);}
+    else nav('onboard',true);
+  },3600);
+}
+
+/* ════════════════════════════════════════
+   ONBOARD
+════════════════════════════════════════ */
+function updateId(){
+  const n=(document.getElementById('in-name').value||'').trim();
+  const el=document.getElementById('id-prev');
+  el.textContent=n?`> CALLSIGN: ${n.toUpperCase()} — IDENTITY CONFIRMED`:'YOUR IDENTITY AWAITS...';
+  el.style.color=n?'var(--cc)':'var(--muted)';
+}
+function calcBMI(){
+  const w=parseFloat(document.getElementById('in-w')?.value);
+  const h=parseFloat(document.getElementById('in-h')?.value);
+  const el=document.getElementById('bmi-chip');
+  if(!el||!w||!h||w<20||h<50){if(el)el.style.display='none';return}
+  const b=w/Math.pow(h/100,2);
+  let msg,col;
+  if(b<18.5){msg=`BMI ${b.toFixed(1)} — Underweight. Volume bonus applied. Prioritize caloric surplus.`;col='#60a5fa';}
+  else if(b<25){msg=`BMI ${b.toFixed(1)} — Healthy range. Standard protocol assigned.`;col='var(--cc)';}
+  else if(b<30){msg=`BMI ${b.toFixed(1)} — Overweight. Low-impact modifications applied automatically.`;col='var(--gold)';}
+  else{msg=`BMI ${b.toFixed(1)} — High BMI. Modified protocol active. Joint safety first.`;col='var(--danger)';}
+  el.style.display='block';el.style.color=col;el.style.borderColor=col+'50';el.textContent=msg;
+}
+function submitOB(){
+  const name=(document.getElementById('in-name').value||'').trim();
+  const w=parseFloat(document.getElementById('in-w').value);
+  const h=parseFloat(document.getElementById('in-h').value);
+  const eq=document.getElementById('in-eq').value;
+  if(!w||!h||w<20||h<50){showToast('⚠ ENTER VALID PHYSICAL METRICS');return;}
+  S.name=name||'PLAYER';S.w=w;S.h=h;S.eq=eq;
+  const b=w/Math.pow(h/100,2);S.bmi=parseFloat(b.toFixed(1));
+  S.bcat=b<18.5?'underweight':b<25?'normal':b<30?'overweight':'obese';
+  save();buildCar();nav('char-select');
+}
+
+/* ════════════════════════════════════════
+   CAROUSEL
+════════════════════════════════════════ */
+let cidx=0;
+function buildCar(){
+  const vp=document.getElementById('car-vp');const ds=document.getElementById('dots');
+  vp.innerHTML='';ds.innerHTML='';
+  CHARS.forEach((c,i)=>{
+    const p=document.createElement('div');p.className='c-panel';p.id='cp'+i;
+    p.style.setProperty('--cc',c.color);p.style.setProperty('--cg',c.glow);
+    p.innerHTML=`<div class="cp-card">
+      <div class="cp-top">
+        <div class="cp-av" style="background:${c.color};box-shadow:0 4px 20px ${c.glow}">
+          ${c.init}<div class="cp-av-ring" style="border-color:${c.color}60"></div>
+        </div>
+        <div>
+          <div class="cp-name">${c.name}</div>
+          <div class="cp-title" style="color:${c.color}">${c.title}</div>
+          <div class="cp-tag">${c.tags.slice(0,2).join(' · ')}</div>
+        </div>
+      </div>
+      <div class="unfurl-wrap" style="padding:10px 0 6px" id="uw${i}">
+        <div class="unfurl-edge-t"></div><div class="unfurl-edge-b"></div>
+        <div class="unfurl-edge-l"></div><div class="unfurl-edge-r"></div>
+        <div class="cp-vibe" style="border-left-color:${c.color};margin:0">${c.vibe}</div>
+      </div>
+      <div style="font-size:.76rem;color:var(--dim);line-height:1.55;margin:8px 0 10px;flex:1;overflow:hidden;-webkit-mask-image:linear-gradient(to bottom,#000 60%,transparent)">${c.physique}</div>
+      <div style="font-size:.72rem;color:var(--text);margin-bottom:10px;padding:8px 10px;background:rgba(0,0,0,.25);border-radius:8px;border-left:2px solid ${c.color}"><span style="font-family:var(--fs);font-size:.52rem;letter-spacing:2px;color:${c.color}">SPECIALTY</span><br>${c.specialty}</div>
+      <div style="margin-bottom:6px">
+        ${c.proj.map((p,pi)=>`<div style="display:flex;gap:8px;margin-bottom:5px;align-items:flex-start"><span style="font-family:var(--fs);font-size:.48rem;color:${c.color};white-space:nowrap;margin-top:2px">${['30D','60D','90D'][pi]}</span><span style="font-size:.72rem;color:var(--dim);line-height:1.4">${p.split('—')[1]?.trim()||p}</span></div>`).join('')}
+      </div>
+      <div class="cp-pills">${c.tags.map(t=>`<span class="pill" style="border-color:${c.color}50;color:${c.color}">${t}</span>`).join('')}</div>
+    </div>`;
+    p.onclick=e=>{
+      const cl=p.classList;
+      if(cl.contains('prev'))carMove(-1);
+      else if(cl.contains('next'))carMove(1);
+    };
+    vp.appendChild(p);
+    const d=document.createElement('div');d.className='dot';d.onclick=()=>carTo(i);ds.appendChild(d);
+  });
+  carTo(0,true);
+}
+function carTo(i,instant){
+  cidx=((i%CHARS.length)+CHARS.length)%CHARS.length;
+  const ps=document.querySelectorAll('.c-panel');const n=CHARS.length;
+  ps.forEach((p,j)=>{
+    p.className='c-panel';
+    const diff=((j-cidx)+n)%n;
+    if(diff===0)p.classList.add('curr');
+    else if(diff===1)p.classList.add('next');
+    else if(diff===n-1)p.classList.add('prev');
+    else if(diff===2)p.classList.add('far-r');
+    else if(diff===n-2)p.classList.add('far-l');
+    else p.classList.add('hidden-pos');
+    // unfurl sealed state only on current
+    const uw=document.getElementById('uw'+j);
+    if(uw){diff===0?uw.classList.add('sealed'):uw.classList.remove('sealed');}
+  });
+  document.querySelectorAll('.dot').forEach((d,j)=>d.classList.toggle('on',j===cidx));
+  const c=CHARS[cidx];
+  document.documentElement.style.setProperty('--cc',c.color);
+  document.documentElement.style.setProperty('--cg',c.glow);
+  // Fire advanced glitch on logo briefly
+  const logo=document.querySelector('.boot-logo');
+  if(logo){logo.classList.add('firing');setTimeout(()=>logo.classList.remove('firing'),200);}
+}
+function carMove(dir){snd('select');carTo(cidx+dir);}
+function selChar(){
+  snd('complete');
+  S.cid=CHARS[cidx].id;if(!S.day)S.day=1;
+  save();setCC(gc(S.cid));upsb();rdash();nav('dashboard');
+  showToast(`⚔ PATH INITIALIZED: ${CHARS[cidx].title.toUpperCase()}`);
+}
+
+/* ════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════ */
+function rdash(){
+  if(!S.cid)return;
+  const c=gc(S.cid);setCC(c);
+  const ph=phase(S.day);const pw=c.phases[ph];const rk=rank(S.xp);
+  document.getElementById('d-name').textContent=(S.name||'PLAYER').toUpperCase();
+  document.getElementById('d-path').textContent='PATH: '+c.title;
+  document.getElementById('d-rank').innerHTML=rk+'<span class="rg-sub">RANK</span>';
+  document.getElementById('d-streak').textContent=S.streak+(S.streak>=7?'🔥':'');
+  document.getElementById('d-coins').textContent='🪙'+S.coins;
+  document.getElementById('d-xp').textContent=S.xp+'xp';
+  const ba=document.getElementById('d-bmi-alert');
+  if(S.bcat==='overweight')ba.innerHTML=`<div class="bmi-alert">⚠ Low-impact workout modifications are active for your BMI.</div>`;
+  else if(S.bcat==='obese')ba.innerHTML=`<div class="bmi-alert">⚠ Joint-safe modified protocol active. Safety first.</div>`;
+  else if(S.bcat==='underweight')ba.innerHTML=`<div class="bmi-alert">⚡ Volume bonus active. Prioritize caloric surplus.</div>`;
+  else ba.innerHTML='';
+  renderTravelBanner();
+  document.getElementById('d-phase').textContent=`PHASE ${ph} — ${ph===1?'FOUNDATION':ph===2?'INTENSITY':'PEAK'}`;
+  document.getElementById('d-qname').textContent=pw.n;
+  document.getElementById('d-qfocus').textContent=pw.f;
+  document.getElementById('d-day').textContent=`Day ${S.day} / 90`;
+  document.getElementById('d-plbl').textContent=ph===1?'Foundation':ph===2?'Intensity':'Peak';
+  document.getElementById('d-prog').style.width=`${(S.day/90)*100}%`;
+  upsb();
+  applyFlicker();
+  // check streak reset
+  const t=tod();
+  if(S.lastDate){
+    const yd=new Date();yd.setDate(yd.getDate()-1);const yds=yd.toISOString().split('T')[0];
+    if(S.lastDate!==t&&S.lastDate!==yds&&S.streak>0){S.streak=0;save();}
+  }
+}
+function upsb(){
+  if(!S.cid)return;
+  const c=gc(S.cid);
+  document.getElementById('sb-player').style.display='';
+  document.getElementById('sb-name').textContent=(S.name||'PLAYER').toUpperCase();
+  document.getElementById('sb-sub').textContent=`${c.title} · Day ${S.day}/90`;
+}
+
+/* ════════════════════════════════════════
+   WORKOUT
+════════════════════════════════════════ */
+let wsets={};let doneTod=false;
+function bmiNote(ex){
+  const nm=ex.n.toLowerCase();
+  const hi=nm.includes('jump')||nm.includes('sprint')||nm.includes('plyom')||nm.includes('broad')||nm.includes('burpee');
+  if(S.bcat==='obese'&&hi)return '⚠ MOD: Replace with step-up or slow squat variation. Protect your joints.';
+  if(S.bcat==='overweight'&&hi)return '⚠ MOD: Reduce impact — land softer, reduce reps by 30%.';
+  if(S.bcat==='underweight')return '+ MOD: Add 1 extra set. Prioritize caloric surplus before training.';
+  return null;
+}
+function rworkout(){
+  if(!S.cid)return;
+  const c=gc(S.cid);const ph=phase(S.day);const pw=c.phases[ph];
+  const exs=pw[activeEq()]||pw.none;
+  document.getElementById('wo-title').textContent=pw.n;
+  document.getElementById('wo-focus').textContent=pw.f;
+  document.getElementById('wo-day').textContent=`Day ${S.day}/90`;
+  document.getElementById('wo-phase').textContent=`Phase ${ph}`;
+  document.getElementById('wo-prog').style.width=`${(S.day/90)*100}%`;
+  // Show travel mode indicator in workout header
+  const woHead=document.querySelector('.wo-head');
+  const existingTb=woHead?.querySelector('.wo-travel-tag');
+  if(existingTb)existingTb.remove();
+  if(S.travel&&woHead){
+    const tag=document.createElement('div');
+    tag.className='wo-travel-tag';
+    tag.style.cssText='font-family:var(--fs);font-size:.52rem;letter-spacing:2px;color:var(--gold);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;padding:4px 10px;display:inline-block;margin-top:6px';
+    tag.textContent='✈ TRAVEL MODE — BODYWEIGHT PROTOCOL ACTIVE';
+    woHead.appendChild(tag);
+  }
+  wsets={};exs.forEach((_,i)=>wsets[i]=new Set());
+  const t=tod();doneTod=S.lastDate===t;
+  const list=document.getElementById('wo-list');list.innerHTML='';
+  exs.forEach((ex,ei)=>{
+    const bn=bmiNote(ex);const ns=parseInt(ex.s)||3;
+    const d=document.createElement('div');d.className='ex-item';d.id='ei'+ei;
+    d.innerHTML=`<div class="ex-name">${ei+1}. ${ex.n}</div>
+      <div class="ex-meta">${ex.s} SETS × ${ex.r}${ex.rest&&ex.rest!=='—'?' · REST '+ex.rest:''}</div>
+      <div class="ex-note">${ex.note}</div>
+      ${bn?`<div class="bmi-note">${bn}</div>`:''}
+      <div class="sets-row" id="sr${ei}">${Array.from({length:ns},(_,si)=>`<div class="sbox" onclick="tset(${ei},${si})">${si+1}</div>`).join('')}</div>`;
+    // Tooltip wiring — desktop hover
+    d.addEventListener('mouseenter',e=>showExTip(ex,c.name,e.clientX,e.clientY));
+    d.addEventListener('mouseleave',hideExTip);
+    list.appendChild(d);
+  });
+  const btn=document.getElementById('btn-complete');const dm=document.getElementById('done-msg');
+  if(doneTod){dm.textContent='✓ PROTOCOL COMPLETED TODAY';btn.textContent='[ ALREADY COMPLETED ]';btn.disabled=true;btn.classList.remove('rdy');}
+  else{dm.textContent='';ucbtn(exs);}
+}
+function tset(ei,si){
+  if(doneTod)return;
+  if(wsets[ei].has(si))wsets[ei].delete(si);else wsets[ei].add(si);
+  const boxes=document.querySelectorAll(`#sr${ei} .sbox`);
+  if(boxes[si])boxes[si].classList.toggle('done',wsets[ei].has(si));
+  const c=gc(S.cid);const ph=phase(S.day);const exs=c.phases[ph][activeEq()]||c.phases[ph].none;
+  const ns=parseInt(exs[ei].s)||3;
+  document.getElementById('ei'+ei)?.classList.toggle('ex-done',wsets[ei].size>=ns);
+  ucbtn(exs);
+}
+function ucbtn(exs){
+  if(doneTod)return;
+  const btn=document.getElementById('btn-complete');
+  let all=true;
+  exs.forEach((ex,i)=>{const ns=parseInt(ex.s)||3;if((wsets[i]?.size||0)<ns)all=false;});
+  if(all){btn.textContent='[ PROTOCOL COMPLETE — ACKNOWLEDGE ]';btn.classList.add('rdy');btn.disabled=false;}
+  else{btn.textContent='[ COMPLETE ALL SETS TO UNLOCK ]';btn.classList.remove('rdy');btn.disabled=true;}
+}
+function completeWO(){
+  if(doneTod)return;
+  snd('complete');
+  const t=tod();let xpg=10;
+  if(S.trp){xpg=30;S.trp=false;}else if(S.dbl){xpg=20;S.dbl=false;}
+  S.xp+=xpg;S.coins+=10;S.total++;
+  const yd=new Date();yd.setDate(yd.getDate()-1);const yds=yd.toISOString().split('T')[0];
+  if(!S.lastDate||S.lastDate===yds)S.streak++;else if(S.lastDate!==t)S.streak=1;else S.streak++;
+  if(S.streak>S.best)S.best=S.streak;
+  S.lastDate=t;doneTod=true;
+  if(S.streak%7===0){S.coins+=25;showToast(`🔥 ${S.streak}-DAY STREAK BONUS! +25🪙`);}
+  const or=rank(S.xp-xpg),nr=rank(S.xp);
+  if(or!==nr){
+    snd('rankup');S.coins+=50;showToast(`⬆ RANK UP: ${nr} — ${RNAMES[nr]}! +50🪙`,4000);
+    // Violent shake
+    document.body.classList.add('shaking');
+    setTimeout(()=>document.body.classList.remove('shaking'),600);
+    // Advanced glitch on rank badge
+    const rb=document.getElementById('d-rank');
+    if(rb){rb.classList.add('glitch-adv','firing');rb.dataset.text=nr;setTimeout(()=>rb.classList.remove('firing'),400);}
+  }
+  const c=gc(S.cid);const ph=phase(S.day);
+  S.log.unshift({date:t,day:S.day,cid:S.cid,cname:c.name,ph,xp:xpg});
+  if(S.log.length>90)S.log=S.log.slice(0,90);
+  if(S.day<90)S.day++;
+  save();
+  const btn=document.getElementById('btn-complete');
+  btn.textContent=`[ +${xpg}XP +10🪙 LOGGED ]`;btn.disabled=true;btn.classList.remove('rdy');
+  document.getElementById('done-msg').textContent='✓ PROTOCOL COMPLETED TODAY';
+}
+
+/* ════════════════════════════════════════
+   NUTRITION
+════════════════════════════════════════ */
+function rnutri(){
+  if(!S.cid)return;
+  const c=gc(S.cid);const n=c.nut;const cal=Math.round(S.w*n.calf);
+  const el=document.getElementById('nutri-root');
+  el.innerHTML=`<div class="lbl">NUTRITION PROTOCOL</div>
+  <div class="sys" style="font-size:1.15rem;margin:5px 0 14px">${c.name} Diet System</div>
+  ${S.cheat?'<div class="cheat-banner">🍔 CHEAT MEAL PASS ACTIVE — TODAY IS EXEMPT</div>':''}
+  <div class="ng">
+    <div class="lbl" style="margin-bottom:8px;color:var(--cc)">${n.goal.toUpperCase()}</div>
+    <div class="cal-n">~${cal}</div><div class="cal-u">DAILY CALORIES TARGET</div>
+    <div class="mgrid">
+      ${['Protein','Carbs','Fats'].map((m,i)=>`<div class="mc"><div class="mv">${[Math.round(S.w*2),Math.round(S.w*4),Math.round(S.w*1)][i]}g</div><div class="ml">${m}</div></div>`).join('')}
+    </div>
+  </div>
+  <div class="lbl" style="margin:16px 0 10px">MACRO SOURCES</div>
+  ${n.macros.map(m=>`<div class="card" style="padding:10px 14px;margin-bottom:8px;font-size:.8rem;color:var(--dim)">• ${m}</div>`).join('')}
+  <div class="lbl" style="margin:16px 0 10px">MEAL PROTOCOL <span style="color:var(--muted);font-size:.5rem;margin-left:8px;letter-spacing:1px">BUDGET-ACCESSIBLE</span></div>
+  ${n.meals.map(m=>`<div class="meal"><span class="mt">${m.t}</span><div><div class="mf">${m.f}</div>${m.b?`<div class="mb">Est. ${m.b}/meal</div>`:''}</div></div>`).join('')}
+  <div class="avoid" style="margin-top:12px"><div class="av-lbl">RESTRICTED</div><div style="font-size:.83rem;color:var(--dim)">${n.avoid}</div></div>
+  <div class="card" style="padding:14px;margin-top:12px;border-color:rgba(0,212,170,.15)">
+    <div class="lbl" style="margin-bottom:6px">BUDGET PHILOSOPHY</div>
+    <div style="font-size:.78rem;color:var(--dim);line-height:1.6">All protocols are designed for any budget. Swap any ingredient for what is cheapest locally — eggs, canned fish, lentils, pork and chicken thighs deliver excellent results without expensive cuts. Health is accessible.</div>
+  </div>
+  <div style="height:20px"></div>`;
+}
+
+/* ════════════════════════════════════════
+   HISTORY
+════════════════════════════════════════ */
+function rhist(){
+  const el=document.getElementById('hist-list');
+  if(!S.log?.length){el.innerHTML=`<div class="hempty"><div style="font-size:3rem;opacity:.3">📜</div><p style="margin-top:14px">No workouts logged yet.<br>Complete your first protocol.</p></div>`;return;}
+  el.innerHTML=S.log.map((h,i)=>{
+    const c=gc(h.cid);const col=c?c.color:'var(--cc)';const gw=c?c.glow:'var(--cg)';
+    return `<div class="hentry" style="animation-delay:${i*.04}s">
+      <div class="hdot" style="background:${col};box-shadow:0 0 5px ${gw}"></div>
+      <div style="flex:1"><div class="hname">${h.cname||'—'}</div><div class="hmeta">Day ${h.day} · Phase ${h.ph} · ${h.date}</div></div>
+      <div class="hxp">+${h.xp}XP</div>
+    </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════════
+   STORE
+════════════════════════════════════════ */
+function rstore(){
+  document.getElementById('store-coins').textContent=S.coins;
+  // shop items
+  document.getElementById('shop-items').innerHTML=SHOP.map(item=>{
+    const owned=S.inv[item.key];const cant=S.coins<item.cost;const perm=!item.con&&owned;
+    return `<div class="sit">
+      <div class="siticon">${item.icon}</div>
+      <div class="sinfo">
+        <div class="sname">${item.n}</div><div class="sdesc">${item.desc}</div>
+        ${owned&&item.con?`<div class="sowned">OWNED ×${owned}</div>`:''}
+        ${perm?`<div class="sowned">UNLOCKED ✓</div>`:''}
+      </div>
+      ${perm?`<button class="bbtn own" disabled>OWNED</button>`
+        :`<button class="bbtn" onclick="buyItem('${item.id}')" ${cant?'disabled':''}>${cant?'🔒 ':''}${item.cost}🪙</button>`}
+    </div>`;
+  }).join('');
+  // inventory
+  const inv=SHOP.filter(i=>i.con&&S.inv[i.key]>0);
+  document.getElementById('inv-list').innerHTML=inv.length
+    ?inv.map(item=>`<div class="invitem">
+      <div>${item.icon} ${item.n} <span style="color:var(--gold);font-family:var(--fs);font-size:.7rem">×${S.inv[item.key]}</span></div>
+      <button class="ubtn" onclick="useItem('${item.key}')">USE</button>
+    </div>`).join('')
+    :`<div style="font-size:.8rem;color:var(--muted);padding:10px">No items in inventory.</div>`;
+  // init reels
+  initReels();
+}
+function buyItem(id){
+  const item=SHOP.find(i=>i.id===id);if(!item||S.coins<item.cost){showToast('⚠ INSUFFICIENT COINS');return;}
+  snd('select');S.coins-=item.cost;
+  if(item.con)S.inv[item.key]=(S.inv[item.key]||0)+1;else S.inv[item.key]=true;
+  save();showToast(`✓ ${item.n} ACQUIRED`);rstore();
+}
+function useItem(key){
+  if(!S.inv[key])return;S.inv[key]--;
+  if(key==='cheatPass'){S.cheat=true;showToast('🍔 CHEAT MEAL ACTIVE TODAY');}
+  if(key==='restToken'){
+    S.lastDate=tod();S.streak++;if(S.streak>S.best)S.best=S.streak;
+    showToast('🛡 STREAK PROTECTED — REST DAY TOKEN USED');
+  }
+  if(key==='dblXP'){S.dbl=true;showToast('💠 DOUBLE XP ACTIVE — NEXT WORKOUT');}
+  if(key==='trpXP'){S.trp=true;showToast('💎 TRIPLE XP ACTIVE — NEXT WORKOUT');}
+  save();rstore();
+}
+
+/* ════════════════════════════════════════
+   GACHA — SLOT MACHINE
+════════════════════════════════════════ */
+function initReels(){
+  [0,1,2].forEach(i=>{
+    const r=document.getElementById('rl'+i);if(!r)return;
+    r.innerHTML='';
+    for(let j=0;j<32;j++){
+      const d=document.createElement('div');d.className='reel-item';
+      d.textContent=RICONS[j%RICONS.length];r.appendChild(d);
+    }
+    r.style.transition='none';r.style.transform='translateY(0)';
+  });
+}
+function wrand(){
+  const tot=GACHA.reduce((a,b)=>a+b.w,0);let rv=Math.random()*tot;
+  for(const g of GACHA){rv-=g.w;if(rv<=0)return g;}return GACHA[0];
+}
+let pulling=false;
+function doPull(){
+  if(pulling)return;
+  if(S.coins<25){showToast('⚠ NEED 25🪙 TO PULL');return;}
+  pulling=true;S.coins-=25;save();
+  document.getElementById('store-coins').textContent=S.coins;
+  document.getElementById('g-btn').disabled=true;
+  document.getElementById('g-res').className='gacha-res';document.getElementById('g-res').textContent='';
+  snd('gspin');
+  const result=wrand();const rico=result.lbl.split(' ')[0];
+  const IH=80;// item height px
+  [0,1,2].forEach((ri)=>{
+    const reel=document.getElementById('rl'+ri);if(!reel)return;
+    const stopMs=1000+ri*700;// each reel stops later
+    const spins=8+ri*3;// more spins per reel
+    const totalPx=spins*RICONS.length*IH+Math.floor(Math.random()*8)*IH;
+    // animate spin
+    reel.style.transition=`transform ${(stopMs/1000)+.3}s cubic-bezier(0.3,0.05,0.1,1)`;
+    reel.style.transform=`translateY(-${totalPx}px)`;
+    setTimeout(()=>{
+      // snap and show result icon
+      reel.style.transition='none';
+      // set item 1 (index 1) to result icon to show in center
+      const items=reel.querySelectorAll('.reel-item');
+      if(items[1])items[1].textContent=rico;
+      const snapTo=IH;// show item at index 1
+      reel.style.transform=`translateY(-${snapTo}px)`;
+      if(ri===2){
+        // all reels stopped — apply result
+        setTimeout(()=>{
+          snd('gwin');
+          applyG(result);
+          document.getElementById('g-btn').disabled=false;
+          pulling=false;
+        },300);
+      }
+    },stopMs+350);
+  });
+}
+function applyG(r){
+  const el=document.getElementById('g-res');
+  el.className='gacha-res '+r.tier;
+  if(r.type==='coins'){S.coins+=r.val;el.textContent=`${r.tier.toUpperCase()} — ${r.lbl} added!`;}
+  else if(r.type==='xp'){S.xp+=r.val;el.textContent=`${r.tier.toUpperCase()} — ${r.lbl} added!`;}
+  else if(r.type==='item'){S.inv[r.key]=(S.inv[r.key]||0)+1;el.textContent=`${r.tier.toUpperCase()} — ${r.lbl} added to inventory!`;}
+  else{el.textContent=`${r.tier.toUpperCase()} — ${r.lbl}`;}
+  if(r.tier==='legend')snd('rankup');
+  save();rstore();
+}
+
+/* ════════════════════════════════════════
+   PROFILE
+════════════════════════════════════════ */
+function rprofile(){
+  const rk=rank(S.xp);const ni=RANKS.indexOf(rk);const nrk=RANKS[ni+1];
+  const cur=RXP[rk];const nxt=nrk?RXP[nrk]:RXP['S+'];
+  const pct=nrk?Math.min(100,((S.xp-cur)/(nxt-cur))*100):100;
+  document.getElementById('p-rank').textContent=rk;
+  document.getElementById('p-rnm').textContent=RNAMES[rk];
+  document.getElementById('p-xpc').textContent=`${S.xp} XP`;
+  document.getElementById('p-xpn').textContent=nrk?`${nrk} at ${nxt} XP`:'MAX RANK ACHIEVED';
+  document.getElementById('p-xpbar').style.width=pct+'%';
+  const c=S.cid?gc(S.cid):null;
+  document.getElementById('pgrid').innerHTML=[
+    {v:S.total,l:'WORKOUTS'},{v:S.best+'🔥',l:'BEST STREAK'},
+    {v:'🪙'+S.coins,l:'COINS'},{v:c?c.title.split(' ').pop():'—',l:'PATH'},
+    {v:`Day ${S.day}/90`,l:'PROGRESS'},{v:S.bmi||'—',l:'BMI'},
+    {v:(S.name||'PLAYER').toUpperCase(),l:'CALLSIGN'},{v:S.w?`${S.w}kg · ${S.h}cm`:'—',l:'METRICS'},
+  ].map(s=>`<div class="pcard card"><div class="pv">${s.v}</div><div class="pl">${s.l}</div></div>`).join('');
+}
+function doReset(){
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm(){
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+function executeReset(){
+  closeConfirm();
+
+  // 1. Wipe storage and state
+  localStorage.removeItem(SK);
+  S={...DEF};
+
+  // 2. Unlock wipe system in case it got stuck
+  _wiping=false;
+  const wipe=document.getElementById('page-wipe');
+  if(wipe){wipe.classList.remove('out','in');wipe.style.transform='';}
+
+  // 3. Remove character theme classes
+  Object.values(CHAR_THEMES||{}).forEach(t=>document.body.classList.remove(t));
+
+  // 4. Reset CSS color vars to default
+  document.documentElement.style.setProperty('--cc','#00d4aa');
+  document.documentElement.style.setProperty('--cg','rgba(0,212,170,.3)');
+  document.documentElement.style.setProperty('--pd','rgba(0,212,170,.1)');
+
+  // 5. Hide all overlays
+  ['hud-layer','ticker-wrap'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.opacity='0';
+  });
+  const na=document.getElementById('novo-avatar');
+  if(na)na.classList.remove('vis','float');
+  const nb=document.getElementById('novo-bubble');
+  if(nb)nb.classList.remove('show');
+
+  // 6. Hide sidebar and bottom nav
+  const sb=document.getElementById('sidebar');if(sb)sb.style.display='none';
+  const bn=document.getElementById('bnav');if(bn)bn.classList.remove('vis');
+  document.querySelectorAll('.nb,.sb-btn').forEach(b=>b.classList.remove('active'));
+
+  // 7. Switch screens directly — no animation
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc-onboard')?.classList.add('active');
+
+  // 8. Clear onboard form
+  ['in-name','in-w','in-h'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  const bmiChip=document.getElementById('bmi-chip');
+  if(bmiChip)bmiChip.style.display='none';
+  const idPrev=document.getElementById('id-prev');
+  if(idPrev){idPrev.textContent='YOUR IDENTITY AWAITS...';idPrev.style.color='var(--muted)';}
+
+  showToast('⚠ SYSTEM DATA RESET — REINITIALIZING');
+}
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+function showToast(msg,ms=2800){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+/* ════════════════════════════════════════
+   CUSTOM CURSOR
+════════════════════════════════════════ */
+function initCursor(){
+  const dot=document.getElementById('cur');
+  const ring=document.getElementById('cur-ring');
+  if(!dot||!ring)return;
+  let mx=0,my=0;
+  document.addEventListener('mousemove',e=>{
+    mx=e.clientX;my=e.clientY;
+    dot.style.left=mx+'px';dot.style.top=my+'px';
+    novoEyes(mx,my);
+    resetNovoIdle();
+  });
+  // Ring lags behind
+  (function animRing(){
+    ring.style.left=mx+'px';ring.style.top=my+'px';
+    requestAnimationFrame(animRing);
+  })();
+  // Hover states
+  document.addEventListener('mouseover',e=>{
+    if(e.target.closest('button,.car-arr,.cp-card,.sb-btn,.nb,.bbtn,.gacha-pbtn,.sbox,.buy-btn')){
+      ring.style.transform='translate(-50%,-50%) scale(2.2)';
+      ring.style.borderColor='var(--gold)';
+      dot.style.background='var(--gold)';
+    }
+  });
+  document.addEventListener('mouseout',e=>{
+    if(e.target.closest('button,.car-arr,.cp-card,.sb-btn,.nb,.bbtn,.gacha-pbtn,.sbox,.buy-btn')){
+      ring.style.transform='translate(-50%,-50%) scale(1)';
+      ring.style.borderColor='var(--cc)';
+      dot.style.background='var(--cc)';
+    }
+  });
+  document.addEventListener('mousedown',()=>{ring.style.transform='translate(-50%,-50%) scale(.8)';});
+  document.addEventListener('mouseup',()=>{ring.style.transform='translate(-50%,-50%) scale(1)';});
+}
+
+/* ════════════════════════════════════════
+   HUD — uptime, day, operative
+════════════════════════════════════════ */
+const hudStart=Date.now();
+function updateHUD(){
+  const el=document.getElementById('hud-uptime');
+  if(el){const s=Math.floor((Date.now()-hudStart)/1000);el.textContent=`${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
+  const hd=document.getElementById('hud-day');if(hd)hd.textContent=String(S.day||1).padStart(3,'0');
+  const hn=document.getElementById('hud-op');if(hn)hn.textContent=(S.name||'SUBJECT').toUpperCase();
+}
+setInterval(updateHUD,1000);
+
+/* ════════════════════════════════════════
+   TICKER STREAM
+════════════════════════════════════════ */
+const TICKER=[
+  'SYS//MAX · LOOKISM PROTOCOL v3.0 · SELF IMPROVEMENT ENGINE ACTIVE',
+  'ENCRYPTION: AES-256 · CONNECTION: SECURE · NODE: AUTHENTICATED',
+  'NEURAL COMPLIANCE MONITORING: ACTIVE · BIOMETRIC CALIBRATION: COMPLETE',
+  'DIRECTIVE SYSTEM: ARMED · TRAINING MATRIX: LOADED · COMBAT ENGINE: ONLINE',
+  'NOVO COMPANION: ONLINE · ADVISORY MODULE: ACTIVE · STANDING BY',
+  'GUN PARK PATH: IRON BODY · DANIEL PATH: MASTERPIECE · VASCO: POWER ENGINE',
+  'PHASE TRANSITIONS: FOUNDATION → INTENSITY → PEAK · 90 DAY PROTOCOL',
+  'STREAK INTEGRITY: MONITORED · COIN LEDGER: LIVE · XP SYSTEM: TRACKING',
+];
+function buildTicker(){
+  const inner=document.getElementById('ticker-inner');
+  if(!inner)return;
+  const msg=TICKER.join('   ·//·   ');
+  inner.textContent=msg+'   ·//·   '+msg;
+}
+
+/* ════════════════════════════════════════
+   NOVO COMPANION
+════════════════════════════════════════ */
+let novoTimer=null;
+
+// Character-specific lines
+const NOVO_CHAR={
+  gun:["Gun's frame wasn't built in a day. It was forged across years of iron conditioning.",
+       "Durability isn't about absorbing pain — it's about making pain irrelevant.",
+       "Every scar on Gun's body is data. What is today's session adding?",
+       "The Shiro Oni doesn't train to look strong. He trains until he IS immovable."],
+  daniel:["The Copy ability means nothing without a body ready to execute it. Build the hardware.",
+          "Daniel's 'small body' became more lethal than his 'big body'. Lean is not weak.",
+          "Perfect kinetic vision starts with perfect kinetic awareness. Feel every rep.",
+          "The Masterpiece is not a destination. It's a continuous calibration."],
+  samuel:["Heat Mode isn't a technique — it's a state of desperation that became strength.",
+          "Samuel's inferiority complex is the most powerful training tool he owns. What's yours?",
+          "The Monster of the North didn't have perfect genetics. He had absolute refusal to quit.",
+          "Upper body first. Always. Then the rest of the world figures out where you rank."],
+  vasco:["100 pushups. 100 squats. 100 sit-ups. 10km. Then repeat tomorrow.",
+         "Vasco doesn't use invisible attacks because he doesn't need them. Be the unstoppable force.",
+         "Runner's High is real. It exists past the point where most people stop. Don't stop.",
+         "A classical statue of a warrior. Not born — carved. Session by session."],
+  jake:["The bloodline doesn't activate on its own. You have to put yourself in the position where it must.",
+        "Jake's grappling is strategic, not emotional. Stay composed on the floor.",
+        "Gapryong's gene is the overcoming gene. Overcoming starts in training.",
+        "12 rounds of combat readiness. That is the target. Train like the fight lasts 12."],
+  johan:["Johan's hardware couldn't keep up with his software. Train both. Let neither fall behind.",
+         "The Infinite Technique isn't infinite moves — it's infinite fluidity. Flow, don't force.",
+         "Speed is a skill. Reaction time is trainable. You are building both right now.",
+         "Clean muscle lines come from clean movement patterns. Precision over volume."],
+  zack:["Iron Boxing means you both dish it out AND absorb it. The fortress attacks.",
+        "Zack's footwork isn't fancy — it's efficient. Every step has a purpose.",
+        "The counter-punch doesn't exist without the patience to wait for the opening.",
+        "Overdeveloped deltoids. Thick core. Dense obliques. That's the blueprint."],
+  goo:["The weapon is an extension of the arm. The arm is an extension of the mind. Train the mind.",
+       "Goo Kim looks soft until the moment he doesn't. Deception is a valid strategy.",
+       "Wrist strength is the foundation of everything in weapon mastery. Never skip it.",
+       "Moonlight Sword Style requires speed that the body earns through months of conditioning."],
+  eli:["Eli doesn't fight like a human because he trains like an animal. Commit to the instinct.",
+       "Total body control means no limb is wasted. Every joint, every angle is a weapon.",
+       "The feral aesthetic isn't aesthetic — it's functional. Leanness in service of speed.",
+       "Baton mastery: two points of contact, infinite angles of attack. Think about it."],
+  sinu:["The God of Combat strikes from blind spots. First, learn where the blind spots are.",
+        "Invisible attacks aren't invisible — they're faster than the eye can process. Train speed.",
+        "Sinu's scars are not weakness. They are the physical record of what he survived. Keep going.",
+        "Peripheral awareness is trainable. Today's drill is tomorrow's invisible attack."],
+};
+
+const NOVO_SCREEN={
+  dashboard:["Systems nominal. What's the plan today?",
+             "Protocol active. Your path is loaded.",
+             "The system tracks everything. Make it worth tracking.",
+             "Streak data logged. Don't break the chain."],
+  workout:["Training protocol initialized. All sets require completion.",
+           "The sets don't complete themselves. Neither do you.",
+           "Mark each set as you finish it. The system is watching.",
+           "Acknowledgment required after all sets. No shortcuts logged."],
+  nutrition:["Fuel is not optional. The body needs input to produce output.",
+             "Budget-accessible means no excuses. Eat to perform.",
+             "Macros are targets, not ceilings. Eat the food.",
+             "The nutrition protocol is as important as the training protocol."],
+  history:["Every entry in this log is a day you showed up.",
+           "The log doesn't lie. Neither does the streak counter.",
+           "Reviewing your history? Good. Pattern recognition is intelligence."],
+  store:["Coins are earned through consistency. Spend them wisely.",
+         "The Gacha pool includes legendary drops. They're rare for a reason.",
+         "Rest Day Tokens protect the streak. The streak protects your momentum."],
+  profile:["Rank is a consequence of consistency. Keep going.",
+           "Your metrics are in the system. The system does not forget.",
+           "E to S+ is a 90-day journey. You are on it."],
+};
+
+const NOVO_IDLE=[
+  "System is standing by. Are you waiting for something?",
+  "No input detected. The protocol doesn't pause itself.",
+  "I find prolonged inactivity statistically concerning.",
+  "Still here. As am I.",
+  "The cursor hasn't moved in a while. Neither has your progress.",
+  "Idle state confirmed. This is not optimal.",
+  "I can wait. The 90-day clock cannot.",
+];
+
+function novaSay(text,ms=5500){
+  const b=document.getElementById('novo-bubble');
+  if(!b)return;
+  b.textContent=text;
+  b.classList.add('show');
+  clearTimeout(b._t);
+  b._t=setTimeout(()=>b.classList.remove('show'),ms);
+}
+
+function novoScreen(screenId){
+  if(!S.cid)return;
+  const char=gc(S.cid);
+  // 50% chance show character line, 50% show screen line
+  const useChar=Math.random()>.45;
+  const pool=useChar?(NOVO_CHAR[S.cid]||NOVO_SCREEN[screenId]||[]):( NOVO_SCREEN[screenId]||[]);
+  if(!pool.length)return;
+  // delay slightly so wipe finishes first
+  setTimeout(()=>novaSay(pool[Math.floor(Math.random()*pool.length)]),800);
+}
+
+function resetNovoIdle(){
+  clearTimeout(novoTimer);
+  novoTimer=setTimeout(()=>{
+    if(!S.cid)return;
+    const line=NOVO_IDLE[Math.floor(Math.random()*NOVO_IDLE.length)];
+    novaSay(line,7000);
+  },55000);
+}
+
+function novoEyes(mx,my){
+  const av=document.getElementById('novo-avatar');
+  if(!av||!av.classList.contains('vis'))return;
+  const rect=av.getBoundingClientRect();
+  const ax=rect.left+rect.width/2,ay=rect.top+rect.height/2;
+  const dx=mx-ax,dy=my-ay,dist=Math.hypot(dx,dy);
+  if(dist<500){
+    const str=Math.min((500-dist)/500,1);
+    const ox=(dx/Math.max(dist,1))*2.5*str;
+    const oy=(dy/Math.max(dist,1))*2.5*str;
+    const el=document.getElementById('neye-l');
+    const er=document.getElementById('neye-r');
+    if(el){el.setAttribute('cx',28+ox);el.setAttribute('cy',30+oy);}
+    if(er){er.setAttribute('cx',36+ox);er.setAttribute('cy',30+oy);}
+  }
+}
+
+// NOVO reacts to workout completion
+const _origComplete=completeWO;
+completeWO=function(){
+  _origComplete();
+  const lines=[
+    "Protocol acknowledged. The system has logged your effort.",
+    "One more day added to the record. Consistency compounds.",
+    "Completed. The streak grows. Do not let it stop.",
+    "Data logged. "+S.xp+"xp total. The rank climbs.",
+  ];
+  setTimeout(()=>novaSay(lines[Math.floor(Math.random()*lines.length)],6000),1200);
+};
+
+// NOVO reacts to character selection
+const _origSel=selChar;
+selChar=function(){
+  _origSel();
+  const c=gc(CHARS[cidx].id);
+  const intro=[
+    `${c.name}. ${c.title}. Path initialized. I'll be with you every session.`,
+    `Interesting choice. ${c.name}'s path demands consistency above all else.`,
+    `${c.title} selected. 90 days. The system is ready when you are.`,
+    `I've analyzed ${c.name}'s training methodology. I'll guide you through it.`,
+  ];
+  setTimeout(()=>novaSay(intro[Math.floor(Math.random()*intro.length)],6000),1500);
+};
+
+/* ════════════════════════════════════════
+   EXERCISE TOOLTIP DATA
+════════════════════════════════════════ */
+const EX_TIP={
+  'Barbell Back Squat':{muscles:'Quads · Glutes · Core',why:'The foundation of all lower body mass — nothing builds legs like loaded squats.',form:'Full depth, knees tracking toes, brace the core like you\'re bracing for a punch.'},
+  'Conventional Deadlift':{muscles:'Posterior Chain · Traps · Grip',why:'The most raw expression of total body strength. Every muscle you own is involved.',form:'Hip hinge from the floor. Flat back. Bar stays against your shins on the way up.'},
+  'Knuckle Pushups':{muscles:'Chest · Triceps · Wrist',why:'Gradual bone density and tendon conditioning in the hands and wrists. Not just strength.',form:'Hard surface only. Full range. Increase surface hardness over weeks not days.'},
+  'Plank Hold':{muscles:'Core · Glutes · Shoulders',why:'Isometric core compression — the same tension used to absorb body shots.',form:'Posterior tilt. Squeeze glutes. Do not let hips sag or pike.'},
+  'Pull-Up':{muscles:'Lats · Biceps · Grip',why:'The gold standard of upper body pulling. Grip strength carries into every fight.',form:'Full dead hang at bottom. Chin over bar at top. No kipping unless specified.'},
+  'Romanian Deadlift':{muscles:'Hamstrings · Glutes · Lower Back',why:'Posterior chain development for explosive hip drive — the engine of every athletic movement.',form:'Hinge at the hips. Maintain a flat back throughout. Feel the hamstrings stretch.'},
+  'Box Jump':{muscles:'Quads · Glutes · Calves · CNS',why:'Fast-twitch fiber activation. Neural speed is built here, not in slow movements.',form:'Minimal ground contact time. Land softly. Step down — never jump down.'},
+  'Bear Crawl':{muscles:'Core · Shoulders · Hips',why:'Builds proprioception and total body coordination — the foundation of animal movement.',form:'Opposite arm and leg. Stay low. Controlled breathing throughout.'},
+  'Crab Walk':{muscles:'Triceps · Core · Glutes · Hips',why:'Rear-facing mobility and total body control in a compromised position.',form:'Hips high off the ground. Move in all directions. Stay smooth.'},
+  'Sprint':{muscles:'Quads · Hamstrings · Glutes · Calves',why:'The purest expression of fast-twitch output. Speed is built by running fast, not slow.',form:'Full acceleration. Arm drive matters. Time every rep.'},
+  'Shadowboxing':{muscles:'Full Body · Cardio · Coordination',why:'Builds movement patterns without impact. The technique session that makes everything else matter.',form:'No tension in the limbs. Fluid. Visualize a real opponent at your level.'},
+  'Jump Rope':{muscles:'Calves · Coordination · Cardio',why:'The boxer\'s tool. Rhythm, coordination and cardiovascular base all in one movement.',form:'Stay on the balls of your feet. Minimal jump height. Let the rope do the work.'},
+  'Hip Escape':{muscles:'Core · Hips · Shoulders',why:'The most fundamental BJJ movement. Without this, ground fighting is impossible.',form:'Drive the hip away from your attacker. Use the shoulder as the anchor. Repeat.'},
+  'Farmer Carry':{muscles:'Grip · Traps · Core · Legs',why:'Raw functional strength — grip, spine, legs all working under load across distance.',form:'Shoulders retracted. Chest tall. Walk with purpose. Maximum load.'},
+  'Ab Wheel':{muscles:'Core · Lats · Shoulders',why:'One of the most effective core exercises that exists. Builds the "armor" around the spine.',form:'Control the extension. Never let the lower back collapse.'},
+  'Turkish Get-Up':{muscles:'Full Body · Shoulder · Core',why:'Ground to standing under load — the foundational movement for total body control.',form:'Slow and deliberate. Every transition is the training. Never rush a TGU.'},
+  'Heavy Bag':{muscles:'Full Body · Cardio · Technique',why:'Real impact training. Everything learned in shadowboxing is tested against resistance here.',form:'Use all 8 limbs if following Muay Thai path. Commit to every strike.'},
+  'Pistol Squat':{muscles:'Quads · Glutes · Balance',why:'Single-leg strength and balance — the closest bodyweight movement to real athletic demand.',form:'Control the descent. Full depth if possible. Use a wall until strength builds.'},
+  'Dragon Flag':{muscles:'Core · Lats · Hip Flexors',why:'Full body isometric compression — builds the "armor core" that Gun and Samuel train.',form:'Grip something solid overhead. Keep the body perfectly rigid. No bend at hips.'},
+  'Muscle-Up':{muscles:'Lats · Triceps · Chest · Core',why:'The athletic transition from pulling to pressing — a complete upper body movement.',form:'Full hang, explosive pull through the transition, lockout at top.'},
+  'Burpee':{muscles:'Full Body · Cardio',why:'High-intensity conditioning that taxes every system simultaneously.',form:'Full lockout at top. Chest to floor at bottom. Minimize rest between reps.'},
+  'Power Clean':{muscles:'Posterior Chain · Traps · Quads',why:'Explosive hip drive into a catch position — the most athletic barbell movement.',form:'Bar close to body. Explosive hip extension. Catch in a quarter squat.'},
+};
+
+function showExTip(ex,charName,mouseX,mouseY){
+  const data=EX_TIP[ex.n];
+  const tip=document.getElementById('ex-tip');
+  if(!tip)return;
+  document.getElementById('etip-name').textContent=ex.n;
+  document.getElementById('etip-muscles').textContent=data?'⬡ '+data.muscles:'';
+  document.getElementById('etip-why').textContent=data?data.why:ex.note;
+  document.getElementById('etip-form').textContent=data?'FORM: '+data.form:ex.note;
+  document.getElementById('etip-char').textContent=data?charName+' PATH — HOVER FOR INTEL':'';
+  posExTip(mouseX,mouseY);
+  tip.classList.add('vis');
+}
+function posExTip(x,y){
+  const tip=document.getElementById('ex-tip');if(!tip)return;
+  const pad=16,tw=310,th=200;
+  let lx=x+pad,ly=y+pad;
+  if(lx+tw>window.innerWidth)lx=x-tw-pad;
+  if(ly+th>window.innerHeight)ly=y-th-pad;
+  tip.style.left=lx+'px';tip.style.top=ly+'px';
+}
+function hideExTip(){document.getElementById('ex-tip')?.classList.remove('vis');}
+document.addEventListener('mousemove',e=>{
+  if(document.getElementById('ex-tip')?.classList.contains('vis'))posExTip(e.clientX,e.clientY);
+});
+
+/* ════════════════════════════════════════
+   PARTICLE NETWORK BACKGROUND CANVAS
+════════════════════════════════════════ */
+function initBgCanvas(){
+  const canvas=document.getElementById('bg-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W,H,particles=[];
+  window._bgCtxColor=getComputedStyle(document.documentElement).getPropertyValue('--cc').trim()||'#00d4aa';
+
+  function resize(){
+    W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;
+    // Reinit particles on resize
+    particles=[];
+    const count=Math.floor((W*H)/22000);
+    for(let i=0;i<count;i++){
+      particles.push({
+        x:Math.random()*W,y:Math.random()*H,
+        vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,
+        r:Math.random()*1.4+.4,
+        opacity:Math.random()*.5+.15
+      });
+    }
+  }
+  window.addEventListener('resize',resize);resize();
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const col=window._bgCtxColor||'#00d4aa';
+    // Update + draw particles
+    particles.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=W;if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle=col;
+      ctx.globalAlpha=p.opacity;
+      ctx.fill();
+    });
+    // Draw connections
+    ctx.globalAlpha=1;
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const dx=particles[i].x-particles[j].x;
+        const dy=particles[i].y-particles[j].y;
+        const dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist<130){
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x,particles[i].y);
+          ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=col;
+          ctx.globalAlpha=(1-dist/130)*.07;
+          ctx.lineWidth=.5;
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+/* ════════════════════════════════════════
+   CURSOR TRAIL CANVAS
+════════════════════════════════════════ */
+function initTrailCanvas(){
+  const canvas=document.getElementById('trail-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  let W,H;
+  const trail=[];
+  let mx=0,my=0;
+
+  function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+  window.addEventListener('resize',resize);resize();
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;
+    trail.push({x:mx,y:my,life:1,r:2.5});
+  });
+
+  (function draw(){
+    ctx.clearRect(0,0,W,H);
+    const col=window._bgCtxColor||'#00d4aa';
+    for(let i=trail.length-1;i>=0;i--){
+      const t=trail[i];
+      ctx.beginPath();
+      ctx.arc(t.x,t.y,t.r*t.life,0,Math.PI*2);
+      ctx.fillStyle=col;
+      ctx.globalAlpha=t.life*.18;
+      ctx.fill();
+      t.life-=.055;
+      if(t.life<=0)trail.splice(i,1);
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  })();
+}
+
+/* ════════════════════════════════════════
+   APPLY FLICKER TO STAT VALUES
+════════════════════════════════════════ */
+function applyFlicker(){
+  ['d-streak','d-xp','d-rank'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.classList.contains('flicker'))el.classList.add('flicker');
+  });
+}
+
+/* ════════════════════════════════════════
+   TRAVEL MODE
+════════════════════════════════════════ */
+let _selectedTravelDays=null;
+
+function openTravelModal(){
+  if(S.travel){
+    // Already in travel — offer to end it
+    endTravelMode();return;
+  }
+  _selectedTravelDays=null;
+  document.querySelectorAll('.tday-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('travel-go-btn').disabled=true;
+  document.getElementById('travel-modal').classList.add('open');
+  snd('select');
+}
+function closeTravelModal(){
+  document.getElementById('travel-modal').classList.remove('open');
+}
+function selectTravelDays(n){
+  _selectedTravelDays=n;
+  document.querySelectorAll('.tday-btn').forEach(b=>{
+    b.classList.toggle('sel', parseInt(b.textContent)===n || (n===0&&b.textContent==='∞'));
+  });
+  document.getElementById('travel-go-btn').disabled=false;
+  snd('hover');
+}
+function activateTravel(){
+  if(_selectedTravelDays===null)return;
+  closeTravelModal();
+  S.travelOrigEq=S.eq;     // remember original setting
+  S.travel=true;
+  S.travelDays=_selectedTravelDays; // 0 = indefinite
+  S.travelStart=new Date().toISOString();
+  S.eq='none';             // switch to bodyweight while travel is on
+  save();
+  snd('complete');
+  const daysLabel=_selectedTravelDays===0?'indefinitely':`for ${_selectedTravelDays} day${_selectedTravelDays===1?'':'s'}`;
+  showToast(`✈ TRAVEL MODE ACTIVE — Bodyweight protocol ${daysLabel}`);
+  setTimeout(()=>novaSay(`Travel Mode activated. Your bodyweight protocol is loaded. The system adapts to your environment — your progress does not stop because your gym does.`,7000),800);
+  rdash();
+  if(document.getElementById('sc-workout')?.classList.contains('active'))rworkout();
+}
+function endTravelMode(){
+  S.travel=false;
+  S.eq=S.travelOrigEq||'gym';
+  S.travelDays=0;S.travelStart=null;
+  save();
+  showToast(`🏠 TRAVEL MODE ENDED — Gym protocol restored`);
+  setTimeout(()=>novaSay(`Welcome back. Gym protocol restored. Let's pick up where you left off.`,5000),600);
+  rdash();
+  if(document.getElementById('sc-workout')?.classList.contains('active'))rworkout();
+}
+function renderTravelBanner(){
+  const el=document.getElementById('d-travel-banner');
+  const btn=document.getElementById('d-travel-btn');
+  if(!el)return;
+  if(!S.travel){
+    el.innerHTML='';
+    if(btn){btn.textContent='✈ TRAVEL MODE — Away from the gym? Tap here.';btn.style.borderColor='rgba(245,158,11,.35)';btn.style.color='var(--gold)';}
+    return;
+  }
+  // Calculate days left
+  let daysInfo='';
+  if(S.travelDays===0){
+    daysInfo='Active indefinitely';
+  } else if(S.travelStart){
+    const start=new Date(S.travelStart);
+    const now=new Date();
+    const daysPassed=Math.floor((now-start)/(1000*60*60*24));
+    const left=S.travelDays-daysPassed;
+    daysInfo=left<=0?'Expiring today...':`${left} day${left===1?'':'s'} remaining`;
+  }
+  el.innerHTML=`<div class="travel-banner">
+    <div class="tb-left">
+      <div class="tb-icon">✈</div>
+      <div>
+        <div class="tb-text">TRAVEL MODE ACTIVE — BODYWEIGHT PROTOCOL</div>
+        <div class="tb-days">${daysInfo} · Original: ${S.travelOrigEq==='gym'?'Gym':'Bodyweight'}</div>
+      </div>
+    </div>
+    <button class="tb-end" onclick="endTravelMode()">END</button>
+  </div>`;
+  if(btn){btn.textContent='✈ TRAVEL MODE — Tap to end and restore gym protocol';btn.style.borderColor='rgba(245,158,11,.6)';btn.style.color='var(--gold)';}
+}
+
+window.addEventListener('load',boot);
+/* fire canvases immediately — don't wait for boot */
+window.addEventListener('DOMContentLoaded',()=>{
+  initBgCanvas();
+  initTrailCanvas();
+});
+</script>
+</body>
+</html>
