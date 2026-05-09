@@ -127,6 +127,47 @@ body.shaking #app{animation:vShake .55s var(--ease)}
   height:0;transition:height .35s ease}
 .unfurl-edge-t{top:0}.unfurl-edge-b{bottom:0}
 .unfurl-edge-l{left:0}.unfurl-edge-r{right:0}
+/* ── Sinu hidden title glitch ── */
+.sinu-title{position:relative;display:inline-block}
+.sinu-title .hidden-title{
+  position:absolute;top:0;left:0;width:100%;
+  font-family:var(--fs);font-size:.6rem;letter-spacing:2px;
+  color:#ef4444;opacity:0;pointer-events:none;
+  text-shadow:0 0 8px #ef4444,0 0 20px rgba(239,68,68,.5);
+  white-space:nowrap
+}
+.sinu-title .real-title{
+  font-family:var(--fs);font-size:.6rem;letter-spacing:2px;
+  color:var(--cc);display:inline-block;transition:opacity .05s
+}
+@keyframes sinuReveal{
+  0%{opacity:0}
+  3%{opacity:1}
+  5%{opacity:.3}
+  7%{opacity:1}
+  9%{opacity:.5}
+  11%{opacity:1}
+  89%{opacity:1}
+  91%{opacity:.4}
+  93%{opacity:1}
+  95%{opacity:.2}
+  97%{opacity:1}
+  100%{opacity:0}
+}
+@keyframes sinuHide{
+  0%{opacity:1}
+  3%{opacity:.2}
+  5%{opacity:.8}
+  7%{opacity:.1}
+  11%{opacity:0}
+  89%{opacity:0}
+  92%{opacity:.6}
+  95%{opacity:.1}
+  100%{opacity:1}
+}
+.sinu-title.reveal .hidden-title{animation:sinuReveal 4s ease forwards}
+.sinu-title.reveal .real-title{animation:sinuHide 4s ease forwards}
+
 .unfurl-wrap.sealed .unfurl-edge-t,.unfurl-wrap.sealed .unfurl-edge-b{transform:scaleX(1)}
 .unfurl-wrap.sealed .unfurl-edge-l,.unfurl-wrap.sealed .unfurl-edge-r{height:100%}
 
@@ -470,7 +511,7 @@ select option{background:#1e293b;color:var(--bright)}
    NOVO COMPANION AVATAR
 ════════════════════════════════════════ */
 #novo-avatar{
-  position:fixed;bottom:36px;right:24px;z-index:700;
+  position:fixed;bottom:52px;right:24px;z-index:700;
   width:64px;height:64px;opacity:0;
   transition:opacity .8s var(--ease),transform .3s var(--ease);
   pointer-events:all
@@ -627,13 +668,228 @@ select option{background:#1e293b;color:var(--bright)}
 .bottom-nav{
   height:var(--nav);background:rgba(6,9,15,.96);backdrop-filter:blur(20px);
   border-top:1px solid var(--border);display:none;align-items:center;
-  justify-content:space-around;padding:0 8px;flex-shrink:0
+  justify-content:space-around;padding:0 8px;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  flex-shrink:0
 }
 .bottom-nav.vis{display:flex}
-.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0;background:none;border:none;cursor:pointer;color:var(--muted);font-family:var(--fs);font-size:.46rem;letter-spacing:1px;transition:color .2s}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:9px 0;background:none;border:none;cursor:pointer;color:var(--muted);
+  font-family:var(--fs);font-size:.46rem;letter-spacing:1px;transition:color .2s;
+  /* Large touch target */
+  min-height:44px;justify-content:center
+}
 .nb.active{color:var(--cc)}
 .nb .ni{font-size:1.2rem}
 .nb.active .ni{filter:drop-shadow(0 0 5px var(--cc))}
+
+/* ════════════════════════════════════════
+   MOBILE OVERHAUL
+════════════════════════════════════════ */
+@media(max-width:767px){
+
+  /* ── iOS input zoom fix — font-size MUST be 16px to prevent auto-zoom ── */
+  input[type="text"],input[type="number"],select,textarea{font-size:16px!important}
+
+  /* ── Safe area + content padding ── */
+  .sc-content{
+    padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 20px)!important;
+    padding-left:14px;padding-right:14px
+  }
+  .wo-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+  .wo-list{padding:12px 16px}
+
+  /* ── Boot ── */
+  .boot-box{padding:24px 16px}
+  .boot-logo{font-size:2rem}
+  .boot-line{font-size:.62rem;word-break:break-all;overflow-wrap:anywhere}
+
+  /* ── Dashboard ── */
+  .dash-top{padding:14px 16px 0}
+  .sv{font-size:1rem}
+  .sl{font-size:.48rem}
+
+  /* ── Carousel ── */
+  .car-vp{height:380px}
+  .dots{gap:10px}
+  .dot{width:8px;height:8px;position:relative}
+  .dot::before{content:'';position:absolute;top:-18px;left:-18px;right:-18px;bottom:-18px}
+  .dot.on{width:22px;border-radius:4px}
+  .car-arr{padding:12px 20px;font-size:.7rem}
+
+  /* ── Workout ── */
+  .wo-head{padding:12px 16px 10px}
+  .ex-item{padding:14px}
+  .ex-name{font-size:.9rem}
+  .sbox{width:44px;height:44px;font-size:.65rem;border-radius:8px}
+  .warmup-item{padding:9px 8px}
+  .warmup-move{font-size:.78rem}
+
+  /* ── NOVO ── */
+  #novo-avatar{
+    bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 10px);
+    right:14px;width:52px;height:52px
+  }
+  #novo-bubble{
+    bottom:62px;right:0;min-width:0;
+    width:calc(100vw - 28px);max-width:calc(100vw - 28px);font-size:.58rem
+  }
+
+  /* ── Ticker ── */
+  #ticker-wrap{bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px))}
+
+  /* ── HUD — simplified ── */
+  .hud-gutter,.ch-h,.ch-v,.ch-ring,#hud-ch{display:none}
+  .hud-coord{font-size:.35rem}
+  .hud-vert{font-size:.3rem}
+  .hud-corner{width:30px;height:30px}
+
+  /* ── Canvas off (performance) ── */
+  #bg-canvas,#trail-canvas{display:none}
+  .orb{filter:blur(80px)}
+
+  /* ── Travel modal ── */
+  .travel-box{padding:22px 18px}
+  .travel-sub{font-size:.78rem}
+  .travel-day-grid{grid-template-columns:repeat(5,1fr);gap:5px}
+  .tday-btn{padding:12px 4px;font-size:.6rem;min-height:44px}
+
+  /* ── Store ── */
+  .sit{flex-wrap:wrap;gap:10px}
+  .bbtn{margin-left:auto}
+
+  /* ── Profile ── */
+  .pgrid{grid-template-columns:1fr 1fr}
+  .pv{font-size:1.2rem}
+
+  /* ── Toast ── */
+  #toast{
+    bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 10px);
+    font-size:.6rem;padding:8px 14px;
+    max-width:90vw;white-space:normal;text-align:center
+  }
+
+  /* ── Modals ── */
+  .confirm-box,.travel-box{
+    width:92%;max-height:85vh;overflow-y:auto;
+    margin-bottom:env(safe-area-inset-bottom,0px)
+  }
+
+  /* ── Measurements form — stack label above input on small screens ── */
+  .meas-row{flex-direction:column;align-items:flex-start;margin-bottom:12px}
+  .meas-row label{width:100%;margin-bottom:4px}
+  .meas-row input{width:100%}
+
+  /* ── Journal textarea ── */
+  #j-text{font-size:16px!important;min-height:100px}
+
+  /* ── Rest day ── */
+  .rest-item{padding:12px}
+  .ri-icon{font-size:1.1rem}
+  .ri-desc{font-size:.74rem}
+}
+
+/* ════════════════════════════════════════
+   SMALL PHONES (320–375px)
+════════════════════════════════════════ */
+@media(max-width:375px){
+  .car-vp{height:340px}
+  .cp-name{font-size:1rem}
+  .dash-top .sys{font-size:1.1rem!important}
+  .srow{gap:6px}
+  .sc{padding:9px 6px}
+  .sv{font-size:.9rem}
+  .sl{font-size:.44rem}
+  .sbox{width:40px;height:40px}
+  .boot-logo{font-size:1.6rem}
+  .rank-big{font-size:3.5rem}
+  /* Stack travel day grid to fewer columns */
+  .travel-day-grid{grid-template-columns:repeat(5,1fr)}
+  /* Measurement grid single column on tiny screens */
+  .meas-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ════════════════════════════════════════
+   PROGRESS JOURNAL
+════════════════════════════════════════ */
+.journal-entry{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden}
+.journal-entry::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cc)}
+.je-week{font-family:var(--fs);font-size:.52rem;letter-spacing:2px;color:var(--cc);margin-bottom:5px}
+.je-date{font-size:.7rem;color:var(--muted);margin-bottom:8px}
+.je-text{font-size:.88rem;color:var(--text);line-height:1.65;white-space:pre-wrap}
+.je-mood{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.je-tag{padding:2px 9px;border-radius:20px;font-family:var(--fs);font-size:.5rem;letter-spacing:1px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);color:var(--cc)}
+.journal-prompt{padding:18px;background:linear-gradient(135deg,rgba(0,212,170,.06),rgba(0,0,0,.4));border:1px solid rgba(0,212,170,.25);border-radius:14px;margin-bottom:18px}
+.jp-label{font-family:var(--fs);font-size:.58rem;letter-spacing:2px;color:var(--cc);margin-bottom:6px}
+.jp-q{font-size:.85rem;color:var(--text);line-height:1.6;margin-bottom:12px}
+.mood-select{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mood-btn{padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.85rem;cursor:pointer;transition:all .2s;min-height:44px}
+.mood-btn.sel{border-color:var(--cc);color:var(--cc);background:rgba(0,212,170,.08)}
+.week-badge{display:inline-block;padding:3px 10px;background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.2);border-radius:20px;font-family:var(--fs);font-size:.5rem;letter-spacing:2px;color:var(--cc);margin-bottom:16px}
+
+/* ════════════════════════════════════════
+   BODY MEASUREMENT TRACKER
+════════════════════════════════════════ */
+.meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.meas-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+.meas-lbl{font-family:var(--fs);font-size:.52rem;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+.meas-cur{font-family:var(--fs);font-size:1.4rem;font-weight:700;color:var(--bright)}
+.meas-unit{font-family:var(--fs);font-size:.5rem;color:var(--muted)}
+.meas-delta{font-size:.72rem;margin-top:3px}
+.meas-delta.pos{color:#22c55e}.meas-delta.neg{color:var(--danger)}.meas-delta.neu{color:var(--muted)}
+.meas-form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.meas-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.meas-row label{font-family:var(--fs);font-size:.54rem;letter-spacing:1px;color:var(--muted);width:90px;flex-shrink:0}
+.meas-row input{flex:1;padding:10px 12px;font-size:.85rem}
+.mhist-row{display:flex;justify-content:space-between;padding:9px 13px;background:rgba(0,0,0,.2);border-radius:8px;margin-bottom:5px;border:1px solid var(--border)}
+.mhd{font-family:var(--fs);font-size:.53rem;color:var(--muted)}
+.mhv{font-family:var(--fs);font-size:.7rem;color:var(--text)}
+
+/* ════════════════════════════════════════
+   REST DAY PROGRAMMING
+════════════════════════════════════════ */
+.rest-hero{text-align:center;padding:22px 16px;background:linear-gradient(145deg,rgba(0,212,170,.06),rgba(0,0,0,.4));border:1px solid rgba(0,212,170,.2);border-radius:16px;margin-bottom:18px}
+.rest-cat-title{font-family:var(--fs);font-size:.58rem;letter-spacing:2px;color:var(--cc);margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.rest-cat-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,212,170,.2),transparent)}
+.rest-item{display:flex;gap:13px;padding:13px;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-bottom:8px;align-items:flex-start}
+.ri-icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.ri-name{font-size:.9rem;font-weight:700;color:var(--bright);margin-bottom:3px}
+.ri-desc{font-size:.78rem;color:var(--dim);line-height:1.5}
+.ri-time{font-family:var(--fs);font-size:.5rem;letter-spacing:1px;color:var(--cc);margin-top:4px}
+
+/* ════════════════════════════════════════
+   WARM-UP STRIP
+════════════════════════════════════════ */
+.warmup-panel{padding:13px;background:linear-gradient(135deg,rgba(0,212,170,.05),rgba(0,0,0,.2));border:1px solid rgba(0,212,170,.18);border-radius:11px;margin-bottom:14px}
+.warmup-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.warmup-title{font-family:var(--fs);font-size:.58rem;letter-spacing:2px;color:var(--cc)}
+.warmup-badge{font-family:var(--fs);font-size:.48rem;letter-spacing:1px;padding:3px 9px;background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.25);border-radius:10px;color:var(--cc)}
+.warmup-body{margin-top:11px;display:none}
+.warmup-body.open{display:block;animation:fadeup .2s var(--ease)}
+.warmup-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(0,0,0,.18);border-radius:7px;margin-bottom:5px}
+.warmup-move{font-size:.82rem;color:var(--text)}
+.warmup-dur{font-family:var(--fs);font-size:.53rem;color:var(--cc);white-space:nowrap}
+
+/* ════════════════════════════════════════
+   VIDEO REFERENCE LINK
+════════════════════════════════════════ */
+.ex-vid{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.22);color:#f87171;font-family:var(--fs);font-size:.48rem;letter-spacing:1px;text-decoration:none;cursor:pointer;margin-top:7px;transition:all .2s}
+.ex-vid:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.45)}
+
+/* ════════════════════════════════════════
+   MENTOR MODE
+════════════════════════════════════════ */
+.mentor-row{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px}
+.mentor-info .ml1{font-family:var(--fs);font-size:.62rem;color:var(--bright);margin-bottom:3px}
+.mentor-info .ml2{font-size:.78rem;color:var(--dim)}
+.tog{width:48px;height:26px;border-radius:13px;background:rgba(255,255,255,.09);border:1px solid var(--border);position:relative;cursor:pointer;transition:all .3s;flex-shrink:0}
+.tog.on{background:var(--cc);border-color:var(--cc)}
+.tog::after{content:'';position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .3s;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.tog.on::after{transform:translateX(22px)}
+.mentor-card{padding:13px;background:rgba(0,212,170,.05);border:1px solid rgba(0,212,170,.22);border-radius:11px;margin-bottom:12px;display:none}
+.mentor-card.show{display:block}
+.mc-lbl{font-family:var(--fs);font-size:.52rem;letter-spacing:2px;color:var(--cc);margin-bottom:5px}
+.mc-desc{font-size:.8rem;color:var(--dim);line-height:1.55}
 
 /* ════════════════════════════════════════
    TOAST
@@ -648,6 +904,13 @@ select option{background:#1e293b;color:var(--bright)}
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 @media(min-width:768px){#toast{bottom:18px}}
+@media(max-width:767px){
+  #toast{
+    bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 10px);
+    font-size:.6rem;padding:8px 14px;
+    max-width:90vw;white-space:normal;text-align:center
+  }
+}
 </style>
 </head>
 <body>
@@ -668,12 +931,15 @@ select option{background:#1e293b;color:var(--bright)}
 <!-- ══ SIDEBAR ══ -->
 <aside class="sidebar" id="sidebar" style="display:none">
   <div class="sb-logo">SYS//MAX</div>
-  <button class="sb-btn" id="snav-dashboard" onclick="nav('dashboard')"><span class="si">⬡</span>STATUS</button>
-  <button class="sb-btn" id="snav-workout"   onclick="nav('workout')"><span class="si">⚔</span>TRAIN</button>
-  <button class="sb-btn" id="snav-nutrition" onclick="nav('nutrition')"><span class="si">◈</span>DIET</button>
-  <button class="sb-btn" id="snav-history"   onclick="nav('history')"><span class="si">◉</span>LOG</button>
-  <button class="sb-btn" id="snav-store"     onclick="nav('store')"><span class="si">◆</span>STORE</button>
-  <button class="sb-btn" id="snav-profile"   onclick="nav('profile')"><span class="si">◎</span>PROFILE</button>
+  <button class="sb-btn" id="snav-dashboard"    onclick="nav('dashboard')"><span class="si">⬡</span>STATUS</button>
+  <button class="sb-btn" id="snav-workout"      onclick="nav('workout')"><span class="si">⚔</span>TRAIN</button>
+  <button class="sb-btn" id="snav-nutrition"    onclick="nav('nutrition')"><span class="si">◈</span>DIET</button>
+  <button class="sb-btn" id="snav-restday"      onclick="nav('restday')"><span class="si">◎</span>REST DAY</button>
+  <button class="sb-btn" id="snav-journal"      onclick="nav('journal')"><span class="si">◉</span>JOURNAL</button>
+  <button class="sb-btn" id="snav-measurements" onclick="nav('measurements')"><span class="si">◆</span>BODY TRACK</button>
+  <button class="sb-btn" id="snav-history"      onclick="nav('history')"><span class="si">▣</span>LOG</button>
+  <button class="sb-btn" id="snav-store"        onclick="nav('store')"><span class="si">▩</span>STORE</button>
+  <button class="sb-btn" id="snav-profile"      onclick="nav('profile')"><span class="si">▤</span>PROFILE</button>
   <div class="sb-player" id="sb-player" style="display:none">
     <div class="sb-name" id="sb-name">—</div>
     <div class="sb-sub"  id="sb-sub">—</div>
@@ -771,10 +1037,15 @@ select option{background:#1e293b;color:var(--bright)}
       <div class="pt"><div class="pf" id="d-prog"></div></div>
       <button class="btn btn-p" onclick="nav('workout')" style="margin-top:13px;font-family:var(--fs);font-size:.68rem;letter-spacing:2px">OPEN TRAINING PROTOCOL →</button>
     </div>
-    <div style="display:flex;gap:9px">
+    <div style="display:flex;gap:9px;margin-bottom:9px">
       <button class="btn btn-sm" onclick="nav('nutrition')" style="flex:1">🥗 DIET</button>
       <button class="btn btn-sm" onclick="nav('store')"     style="flex:1">🏪 STORE</button>
       <button class="btn btn-sm" onclick="nav('history')"   style="flex:1">📜 LOG</button>
+    </div>
+    <div style="display:flex;gap:9px;margin-bottom:9px">
+      <button class="btn btn-sm" onclick="nav('restday')"      style="flex:1;border-color:rgba(0,212,170,.3)">😴 REST DAY</button>
+      <button class="btn btn-sm" onclick="nav('journal')"      style="flex:1;border-color:rgba(0,212,170,.3)">📝 JOURNAL</button>
+      <button class="btn btn-sm" onclick="nav('measurements')" style="flex:1;border-color:rgba(0,212,170,.3)">📐 BODY</button>
     </div>
     <div style="margin-top:9px">
       <button class="btn btn-sm" onclick="openTravelModal()" id="d-travel-btn" style="width:100%;border-color:rgba(245,158,11,.35);color:var(--gold)">✈ TRAVEL MODE — Away from the gym? Tap here.</button>
@@ -867,8 +1138,59 @@ select option{background:#1e293b;color:var(--bright)}
       <div class="pt"><div class="pf pf-gold" id="p-xpbar"></div></div>
     </div>
     <div class="pgrid" id="pgrid"></div>
+    <div class="lbl" style="margin-bottom:10px">COMPANION SETTINGS</div>
+    <div class="mentor-row">
+      <div class="mentor-info">
+        <div class="ml1">🤖 MENTOR MODE</div>
+        <div class="ml2">NOVO becomes your full-time coach — extended messages, proactive check-ins, character-specific analysis.</div>
+      </div>
+      <div class="tog" id="mentor-tog" onclick="toggleMentor()"></div>
+    </div>
+    <div class="mentor-card" id="mentor-card">
+      <div class="mc-lbl">MENTOR MODE ACTIVE</div>
+      <div class="mc-desc">NOVO will speak more frequently, deliver longer strategy breakdowns, and check in on you proactively during idle periods. Expect to hear from your companion at the start of every session.</div>
+    </div>
     <button class="btn" onclick="nav('char-select')" style="margin-bottom:10px">⚔ CHANGE PATH</button>
     <button class="btn btn-danger" onclick="doReset()">⚠ RESET ALL DATA</button>
+  </div>
+</div>
+
+<!-- PROGRESS JOURNAL -->
+<div id="sc-journal" class="screen">
+  <div class="sc-content" style="padding-top:22px">
+    <div class="lbl">PROGRESS JOURNAL</div>
+    <div class="sys" style="font-size:1.2rem;margin:5px 0 4px">Weekly Log</div>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px">Reflect on your week. The system remembers what you say here.</p>
+    <div id="journal-prompt-area"></div>
+    <div class="lbl" style="margin-bottom:12px">PREVIOUS ENTRIES</div>
+    <div id="journal-entries"></div>
+  </div>
+</div>
+
+<!-- BODY MEASUREMENTS -->
+<div id="sc-measurements" class="screen">
+  <div class="sc-content" style="padding-top:22px">
+    <div class="lbl">BODY MEASUREMENTS</div>
+    <div class="sys" style="font-size:1.2rem;margin:5px 0 14px">Weekly Tracker</div>
+    <div class="meas-grid" id="meas-display"></div>
+    <div class="meas-form" id="meas-form-panel">
+      <div class="lbl" style="margin-bottom:12px">LOG THIS WEEK</div>
+      <div class="meas-row"><label>CHEST (cm)</label><input type="number" id="m-chest" placeholder="e.g. 100" step="0.5"></div>
+      <div class="meas-row"><label>WAIST (cm)</label><input type="number" id="m-waist" placeholder="e.g. 82" step="0.5"></div>
+      <div class="meas-row"><label>ARM (cm)</label><input type="number" id="m-arm" placeholder="e.g. 38" step="0.5"></div>
+      <div class="meas-row"><label>THIGH (cm)</label><input type="number" id="m-thigh" placeholder="e.g. 58" step="0.5"></div>
+      <div class="meas-row"><label>WEIGHT (kg)</label><input type="number" id="m-weight" placeholder="e.g. 74" step="0.1"></div>
+      <button class="btn btn-p" onclick="saveMeasurements()" style="margin-top:6px;font-family:var(--fs);font-size:.68rem;letter-spacing:2px">LOG MEASUREMENTS</button>
+    </div>
+    <div class="lbl" style="margin:16px 0 10px">MEASUREMENT HISTORY</div>
+    <div id="meas-history"></div>
+  </div>
+</div>
+
+<!-- REST DAY -->
+<div id="sc-restday" class="screen">
+  <div class="sc-content" style="padding-top:22px" id="restday-root">
+    <div class="lbl">REST DAY PROTOCOL</div>
   </div>
 </div>
 
@@ -876,11 +1198,11 @@ select option{background:#1e293b;color:var(--bright)}
 
 <!-- BOTTOM NAV (mobile) -->
 <nav class="bottom-nav" id="bnav">
-  <button class="nb" id="bnav-dashboard" onclick="nav('dashboard')"><span class="ni">⬡</span>STATUS</button>
-  <button class="nb" id="bnav-workout"   onclick="nav('workout')"><span class="ni">⚔</span>TRAIN</button>
-  <button class="nb" id="bnav-nutrition" onclick="nav('nutrition')"><span class="ni">◈</span>DIET</button>
-  <button class="nb" id="bnav-history"   onclick="nav('history')"><span class="ni">◉</span>LOG</button>
-  <button class="nb" id="bnav-store"     onclick="nav('store')"><span class="ni">◆</span>STORE</button>
+  <button class="nb" id="bnav-dashboard"    onclick="nav('dashboard')"><span class="ni">⬡</span>STATUS</button>
+  <button class="nb" id="bnav-workout"      onclick="nav('workout')"><span class="ni">⚔</span>TRAIN</button>
+  <button class="nb" id="bnav-restday"      onclick="nav('restday')"><span class="ni">◎</span>REST</button>
+  <button class="nb" id="bnav-journal"      onclick="nav('journal')"><span class="ni">◉</span>JOURNAL</button>
+  <button class="nb" id="bnav-measurements" onclick="nav('measurements')"><span class="ni">◆</span>BODY</button>
 </nav>
 </div><!-- main -->
 <!-- TRAVEL MODE MODAL -->
@@ -1091,7 +1413,7 @@ const CHARS=[
    gym:[{n:'Squat Max Effort',s:5,r:'3',rest:'3 min',note:'Near-max. Test what 60 days built.'},{n:'Deadlift Heavy Singles',s:5,r:'2',rest:'3 min',note:'Add weight. This is the peak test.'},{n:'Kyokushin Volume Bag',s:8,r:'3 min',rest:'45s',note:'Every round is a fight. Endure.'},{n:'Dragon Flag Full',s:4,r:'10',rest:'90s',note:'Full extension. Controlled negative.'},{n:"Farmer's Walk Heavy",s:5,r:'50m',rest:'2 min',note:'Heavier than Phase 2. This is the ceiling.'}],
    none:[{n:'One-Arm Pushup Progression',s:4,r:'6/arm',rest:'90s',note:'Wall or incline if needed. Progress to floor.'},{n:'Weighted Knuckle Pushups',s:5,r:'25',rest:'60s',note:'Loaded backpack for resistance.'},{n:'Full Iron Body Circuit',s:5,r:'20 strikes/area',rest:'60s',note:'Forearms, shins, hands — all surfaces. Systematically.'},{n:'Dragon Flag',s:4,r:'12',rest:'90s',note:'Full controlled reps. No shortcuts.'},{n:'Pistol Squat',s:4,r:'8/leg',rest:'90s',note:'Single leg. Slow eccentric descent.'}]}}
 },
-{id:'daniel',name:'Daniel Park',title:'The Dual Perfection',init:'D',color:'#06b6d4',glow:'rgba(6,182,212,.35)',
+{id:'daniel',name:'Daniel Park',title:'Legend Prospect',init:'D',color:'#06b6d4',glow:'rgba(6,182,212,.35)',
  vibe:'"The platonic ideal of human movement — neither too big to lose speed nor too lean to lose power."',
  physique:'Two distinct bodies. The "Big" body: maxed-out perfection — every muscle in ideal proportion with full, round bellies at low body fat. The "Small" body post-Gun training: leaner, more compact, wiry strength built specifically for high-intensity calisthenics. Both are masterpieces in different ways.',
  tags:['COPY','SYSTEMA','AGILITY','ULTRA INSTINCT'],
@@ -1115,7 +1437,7 @@ const CHARS=[
    gym:[{n:'Hang Snatch',s:5,r:'3',rest:'2 min',note:'Full speed. This is pure athleticism.'},{n:'Weighted Pull-Up Heavy',s:5,r:'5',rest:'2 min',note:'Near max load. Full range.'},{n:'Barbell Complex',s:5,r:'6 reps each',rest:'3 min',note:'RDL → Row → Clean → Press. No rest between.'},{n:'400m Sprint',s:4,r:'1',rest:'2 min',note:'Max effort. Record your time each session.'},{n:'Depth Jump',s:4,r:'5',rest:'2 min',note:'Step off box, explode on contact. No pause.'}],
    none:[{n:'Clapping Pushup',s:4,r:'12',rest:'60s',note:'Full chest to floor. Maximum explosion.'},{n:'Muscle-Up',s:4,r:'5',rest:'2 min',note:'Full range. Strict preferred over kip.'},{n:'Handstand Hold',s:3,r:'30s',rest:'90s',note:'Wall okay. Work toward freestanding.'},{n:'Pistol Squat',s:4,r:'10/leg',rest:'90s',note:'No assistance. Controlled descent.'},{n:'400m Sprint',s:4,r:'1',rest:'2 min',note:'All-out. Track your time each session.'}]}}
 },
-{id:'samuel',name:'Samuel Seo',title:'The Monster of the North',init:'S',color:'#d97706',glow:'rgba(217,119,6,.35)',
+{id:'samuel',name:'Samuel Seo',title:'Chest Monster',init:'S',color:'#d97706',glow:'rgba(217,119,6,.35)',
  vibe:'"Intimidating, wide, and heavy — he walks into a room and the room gets smaller."',
  physique:'Undisputed king of upper body hypertrophy. Slab-like chest dominates his silhouette. In Heat Mode, vascularity becomes extreme and upper traps flare giving a demonic outline. Frame broader than nearly anyone in the 2nd generation, built for raw bruising power and inhuman damage absorption.',
  tags:['STREET','HEAT MODE','RESILIENCE','UPPER BODY'],
@@ -1139,7 +1461,7 @@ const CHARS=[
    gym:[{n:'Incline Bench Heavy',s:5,r:'5',rest:'3 min',note:'Max weight. Test the ceiling.'},{n:'Flat Bench Heavy',s:5,r:'5',rest:'3 min',note:'Your strongest bench. Go.'},{n:'Heavy Row',s:5,r:'6',rest:'2 min',note:'Match every press with a pull.'},{n:'Weighted Dip Heavy',s:5,r:'8',rest:'2 min',note:'Lower chest and tricep peak density.'},{n:'Heat Mode Circuit',s:6,r:'3 min continuous',rest:'45s',note:'All upper moves back to back. No mercy.'}],
    none:[{n:'Pushup Tri-Set',s:6,r:'15+15+15',rest:'90s',note:'Wide + diamond + decline = 45 reps per set.'},{n:'Pull-Up to Failure',s:5,r:'max',rest:'2 min',note:'Every set to complete failure.'},{n:'One-Arm Pushup Progression',s:4,r:'6/arm',rest:'90s',note:'Work toward the floor rep.'},{n:'Dip + Pushup Superset',s:5,r:'12+20',rest:'60s',note:'Chair dips into pushups immediately.'},{n:'Knuckle Pushup Volume',s:5,r:'30',rest:'60s',note:'Iron knuckles.'}]}}
 },
-{id:'vasco',name:'Vasco',title:'The Muay Thai Engine',init:'V',color:'#f97316',glow:'rgba(249,115,22,.35)',
+{id:'vasco',name:'Vasco',title:'The Hero',init:'V',color:'#f97316',glow:'rgba(249,115,22,.35)',
  vibe:'"A classical statue of a warrior. Built by pure, unadulterated hard labor."',
  physique:'Functional power build — not heavy like Samuel, but dense. Thick powerful quads and a cobra lat spread from years of the 100/100/100/10km grind and Muay Thai. Rock-hard muscle texture. Body almost entirely covered in intricate tattoos that accentuate his definition.',
  tags:['MUAY THAI','RAW POWER',"RUNNER'S HIGH",'8 LIMBS'],
@@ -1164,7 +1486,7 @@ const CHARS=[
    gym:[{n:'Squat Max',s:5,r:'3',rest:'3 min',note:'Near-maximal. Test your absolute limit.'},{n:'Bench Heavy',s:5,r:'3',rest:'3 min',note:'Maximum chest pressing strength.'},{n:'Deadlift Heavy',s:5,r:'3',rest:'3 min',note:'Full posterior chain peak.'},{n:'Muay Thai Circuit',s:8,r:'3 min rounds',rest:'45s',note:"Runner's High territory. Ignore the pain."},{n:'10km Run',s:1,r:'complete',rest:'—',note:'Peak Muay Thai endurance test.'}],
    none:[{n:'200 Pushups',s:1,r:'200 total',rest:'as needed',note:'Peak Phase 3. Complete 200.'},{n:'200 Squats',s:1,r:'200 total',rest:'as needed',note:'Beyond normal human limits.'},{n:'200 Sit-Ups',s:1,r:'200 total',rest:'as needed',note:'Core iron forged.'},{n:'10km Run',s:1,r:'complete',rest:'—',note:"Runner's High: find the state and stay there."},{n:'Shadow Muay Thai War',s:8,r:'3 min rounds',rest:'45s',note:'All 8 limbs at maximum power output.'}]}}
 },
-{id:'jake',name:'Jake Kim',title:'The MMA Aristocrat',init:'J',color:'#a855f7',glow:'rgba(168,85,247,.35)',
+{id:'jake',name:'Jake Kim',title:"Gapryong's Blood",init:'J',color:'#a855f7',glow:'rgba(168,85,247,.35)',
  vibe:'"The quintessential heavyweight MMA fighter — engineered for 12 rounds of combat."',
  physique:'Standing roughly 190cm with immense reach. Broad shoulders and thick core for grappling, long lean limbs for explosive striking. Balanced is the keyword. He doesn\'t look like a bodybuilder — he looks like a professional athlete with inherited genius genetics from Gapryong Kim.',
  tags:['MMA','GRAPPLING','BLOODLINE','BJJ'],
@@ -1188,7 +1510,7 @@ const CHARS=[
    gym:[{n:'Barbell Complex',s:5,r:'5 reps each',rest:'3 min',note:'Deadlift → Clean → Squat → Press. No break.'},{n:'Weighted Pull-Up Heavy',s:5,r:'5',rest:'2 min',note:'Test your absolute strength ceiling.'},{n:'MMA Circuit',s:6,r:'3 min rounds',rest:'60s',note:'Strikes + takedowns + grappling. Full output.'},{n:'Farmer Carry Heavy',s:5,r:'50m',rest:'90s',note:'Max load. Grip dominance.'},{n:'Neck Work All Planes',s:4,r:'15',rest:'60s',note:"A grappler's ultimate armor."}],
    none:[{n:'One-Arm Pull-Up Progression',s:4,r:'max/arm',rest:'2 min',note:'Assisted if needed. Build toward the full rep.'},{n:'Peak Grappling Circuit',s:8,r:'3 min rounds',rest:'45s',note:'Maximum intensity. You are a machine.'},{n:'Pike Handstand Pushup',s:4,r:'10',rest:'90s',note:'Overhead pressing for clinch control.'},{n:'Pistol Squat',s:4,r:'8/leg',rest:'90s',note:'Single leg power for takedown finishing.'},{n:'Sprint + Sprawl',s:10,r:'10s each',rest:'30s',note:'Peak MMA conditioning drill.'}]}}
 },
-{id:'johan',name:'Johan Seong',title:'The Evolving Copycat',init:'J',color:'#94a3b8',glow:'rgba(148,163,184,.35)',
+{id:'johan',name:'Johan Seong',title:'The Pinnacle Of Talent',init:'J',color:'#94a3b8',glow:'rgba(148,163,184,.35)',
  vibe:'"Lean, explosive, and strung tight — built for high-speed bursts of impossible precision."',
  physique:'Originally ectomorph, transformed to 187cm/86kg to support the 10-second UI copy ability. Very clean muscle lines — long triceps and a sharp defined midsection. Lacks the bone density of Gun or Samuel, which is exactly why his genius-level software must overcome hardware limits. His eyes are often unfocused due to progressing blindness.',
  tags:['SPEED','IMITATION','INFINITE TECHNIQUE','COPY GENIUS'],
@@ -1236,7 +1558,7 @@ const CHARS=[
    gym:[{n:'Push Press',s:5,r:'5',rest:'2 min',note:'Explosive overhead. Punch power peak.'},{n:'Heavy Bag War Rounds',s:8,r:'3 min rounds',rest:'45s',note:'Maximum intensity. This is the fortress.'},{n:'Plyometric Pushup',s:4,r:'12',rest:'60s',note:'Explosive punch-speed training.'},{n:'Iron Body Full Circuit',s:5,r:'25 strikes/area',rest:'60s',note:'Shoulders, forearms, ribs — systematically.'},{n:'Sprint 400m',s:4,r:'1',rest:'3 min',note:'Boxing conditioning absolute peak.'}],
    none:[{n:'Handstand Pushup Peak',s:4,r:'max',rest:'2 min',note:'Wall if needed. Work toward freestanding.'},{n:'Shadowboxing Iron Flow',s:8,r:'3 min rounds',rest:'45s',note:'Maximum intensity throughout.'},{n:'Jump Rope Speed Peak',s:6,r:'2 min',rest:'45s',note:'Maximum turnover speed sustained.'},{n:'Iron Body Full',s:5,r:'25 strikes/area',rest:'60s',note:'Complete body hardening circuit.'},{n:'Sprint 400m',s:4,r:'1',rest:'3 min',note:'Peak conditioning run. Time it.'}]}}
 },
-{id:'goo',name:'Goo Kim',title:'The Lean Weapon',init:'G',color:'#84cc16',glow:'rgba(132,204,22,.35)',
+{id:'goo',name:'Goo Kim',title:'The Weapons Genius',init:'G',color:'#84cc16',glow:'rgba(132,204,22,.35)',
  vibe:'"Lanky, deceptive, and sharp — his goofy appearance hides a lethal truth."',
  physique:'Very tall at 191cm with a softer, smoother look than other fighters. Not hyper-defined like Vasco or Daniel — which makes his superhuman strength terrifying. Wiry musculature: long muscles built for range of motion and lethal weapon speed rather than raw pressing power.',
  tags:['KUMDO','MOONLIGHT STYLE','WEAPON GENIUS','WRIST SPEED'],
@@ -1260,7 +1582,7 @@ const CHARS=[
    gym:[{n:'Wrist Roller Max',s:5,r:'5 rollovers',rest:'60s',note:'Maximum load. Forearm density peak.'},{n:'Pull-Up L-Sit Hold',s:4,r:'8 + 15s hold',rest:'2 min',note:'Pull up, hold L position at the top.'},{n:'Moonlight Speed Full',s:8,r:'3 min',rest:'45s',note:'Maximum speed cuts. All 8 directions. Full.'},{n:'Balance Drill',s:4,r:'2 min',rest:'60s',note:'Unstable surface if possible. Footwork mastery.'},{n:'Full Shoulder Circuit',s:3,r:'15 each',rest:'60s',note:'Face pull + raise + rotation. All planes.'}],
    none:[{n:'One-Arm Stick Drill',s:5,r:'3 min/arm',rest:'60s',note:'Force single-arm precision and control.'},{n:'Pull-Up Slow',s:4,r:'8',rest:'2 min',note:'5 seconds up. 5 seconds down. Deliberate.'},{n:'Wrist Pushup Peak',s:4,r:'12',rest:'60s',note:'Wrist pushups on a hard floor.'},{n:'Handstand Hold Long',s:3,r:'40s',rest:'90s',note:'Work toward freestanding. Time every hold.'},{n:'Moonlight Speed Peak',s:8,r:'3 min',rest:'45s',note:'Maximum velocity. All 8 cuts. No pause.'}]}}
 },
-{id:'eli',name:'Eli Jang',title:'The Wild Instinct',init:'E',color:'#22c55e',glow:'rgba(34,197,94,.35)',
+{id:'eli',name:'Eli Jang',title:"Hostel's Big Daddy",init:'E',color:'#22c55e',glow:'rgba(34,197,94,.35)',
  vibe:'"An apex predator — he moves in ways that feel inhuman."',
  physique:'Lean and nimble with a prominent scar on his chest. Feral aesthetic — incredibly flexible with a shredded look emphasizing agility. Core and spinal erectors highly developed from moving in inhuman ways. Not about size — about total body control. Every movement becomes a weapon.',
  tags:['ANIMAL INSTINCT','BATON','WILDNESS','FERAL MOVEMENT'],
@@ -1284,7 +1606,7 @@ const CHARS=[
    gym:[{n:'Barbell Wild Complex',s:5,r:'5 each',rest:'3 min',note:'Clean > Squat > Press > RDL. No breaks ever.'},{n:'Muscle-Up',s:4,r:'5',rest:'2 min',note:'Full body transition. Animal in motion.'},{n:'Animal Flow Peak',s:8,r:'3 min',rest:'45s',note:'Maximum intensity. All patterns. Wild.'},{n:'Reactive Sprint',s:6,r:'20m on cue',rest:'90s',note:'Move on instinct. Train the animal reaction.'},{n:'Baton Mastery Circuit',s:6,r:'3 min',rest:'45s',note:'Full speed. Pressure points + flow combined.'}],
    none:[{n:'Animal Flow Maximum',s:8,r:'3 min',rest:'45s',note:'Peak intensity. All patterns combined.'},{n:'One-Arm Pushup',s:4,r:'6/arm',rest:'90s',note:'Wild instinct. Adapt the movement as needed.'},{n:'Muscle-Up Progression',s:4,r:'max',rest:'2 min',note:'Work toward the strict rep.'},{n:'Sprint + Animal Flow',s:6,r:'20m sprint + 30s flow',rest:'90s',note:'Speed then ground movement combined.'},{n:'Baton Peak',s:8,r:'3 min',rest:'45s',note:'Full speed. No patterns. Pure instinct.'}]}}
 },
-{id:'sinu',name:'Sinu Han',title:'The God of Combat',init:'S',color:'#8b5cf6',glow:'rgba(139,92,246,.35)',
+{id:'sinu',name:'Sinu Han',title:'The Boy Of Promise',hiddenTitle:'The God Of Combat',init:'S',color:'#8b5cf6',glow:'rgba(139,92,246,.35)',
  vibe:'"A blur of muscle and scars — he strikes from where you cannot see."',
  physique:'Arguably the lowest body fat percentage among the leaders. Body is a roadmap of scars from his Circus years — extreme durability in a slender frame. Lean with powerful legs optimized for Invisible Attacks that require striking from blind spots at subsonic speeds. Left eye is cloudy white from injury.',
  tags:['INVISIBLE ATTACKS','BLIND SPOT','SUBSONIC SPEED','GOD OF COMBAT'],
@@ -1362,7 +1684,8 @@ const DEF={
   day:1,streak:0,best:0,lastDate:null,coins:0,xp:0,total:0,
   inv:{cheatPass:0,restToken:0,dblXP:0,trpXP:0,heatMode:false,ironBadge:false,shiroSeal:false,legendCrest:false,coinBoost:0,novoBrief:0,focusMode:0,shield48:0,pathSwap:0,phaseUp:false,coinBomb:0},
   log:[],dbl:false,trp:false,cheat:false,
-  travel:false,travelDays:0,travelStart:null,travelOrigEq:'gym'
+  travel:false,travelDays:0,travelStart:null,travelOrigEq:'gym',
+  journal:[],measurements:[],mentorMode:false
 };
 let S={...DEF};
 const SK='sysmax_v3';
@@ -1407,7 +1730,7 @@ function setCC(c){
 /* ════════════════════════════════════════
    NAVIGATION — with page wipe
 ════════════════════════════════════════ */
-const MAIN=['dashboard','workout','nutrition','history','store','profile'];
+const MAIN=['dashboard','workout','nutrition','history','store','profile','journal','measurements','restday'];
 let _wiping=false;
 function nav(id,instant=false){
   snd('nav');
@@ -1440,6 +1763,9 @@ function _doNav(id){
   if(id==='history'){rhist();novoScreen('history');}
   if(id==='store'){rstore();novoScreen('store');}
   if(id==='profile'){rprofile();novoScreen('profile');}
+  if(id==='journal'){rjournal();novoScreen('journal');}
+  if(id==='measurements'){rmeasurements();novoScreen('measurements');}
+  if(id==='restday'){rrestday();novoScreen('restday');}
   if(id==='char-select'){buildCar();} // ← fix: always rebuild carousel on entry
   // HUD visibility
   const showHudOn=m&&S.cid;
@@ -1473,7 +1799,7 @@ function boot(){
   },l.d));
   setTimeout(()=>{document.getElementById('bstatus').innerHTML='> PLAYER READY<span class="cur"></span>'},2900);
   setTimeout(()=>{
-    buildTicker();initCursor();initBgCanvas();initTrailCanvas();
+    buildTicker();initCursor();initBgCanvas();initTrailCanvas();initScreenSwipe();
     if(S.cid){setCC(gc(S.cid));rdash();nav('dashboard',true);}
     else if(S.w){buildCar();nav('char-select',true);}
     else nav('onboard',true);
@@ -1531,7 +1857,13 @@ function buildCar(){
         </div>
         <div>
           <div class="cp-name">${c.name}</div>
-          <div class="cp-title" style="color:${c.color}">${c.title}</div>
+          ${c.id==='sinu'
+            ? `<div class="sinu-title" id="sinu-title-${i}">
+                <span class="real-title" style="color:${c.color}">${c.title}</span>
+                <span class="hidden-title">${c.hiddenTitle}</span>
+               </div>`
+            : `<div class="cp-title" style="color:${c.color}">${c.title}</div>`
+          }
           <div class="cp-tag">${c.tags.slice(0,2).join(' · ')}</div>
         </div>
       </div>
@@ -1556,6 +1888,7 @@ function buildCar(){
     const d=document.createElement('div');d.className='dot';d.onclick=()=>carTo(i);ds.appendChild(d);
   });
   carTo(0,true);
+  initCarouselSwipe();
 }
 function carTo(i,instant){
   cidx=((i%CHARS.length)+CHARS.length)%CHARS.length;
@@ -1577,11 +1910,58 @@ function carTo(i,instant){
   const c=CHARS[cidx];
   document.documentElement.style.setProperty('--cc',c.color);
   document.documentElement.style.setProperty('--cg',c.glow);
+
+  // Sinu easter egg — title glitches to "The God Of Combat" after 2s on his panel
+  clearTimeout(window._sinuTimer);
+  if(c.id==='sinu'){
+    window._sinuTimer=setTimeout(()=>{
+      // Find sinu title element in the current panel
+      const siEl=document.querySelector('.c-panel.curr .sinu-title');
+      if(!siEl)return;
+      siEl.classList.add('reveal');
+      // Remove after animation completes (4s) + small buffer
+      setTimeout(()=>siEl.classList.remove('reveal'),4200);
+      // Repeat every ~14s while still on Sinu panel
+      window._sinuRepeat=setInterval(()=>{
+        const el=document.querySelector('.c-panel.curr .sinu-title');
+        if(!el){clearInterval(window._sinuRepeat);return;}
+        el.classList.add('reveal');
+        setTimeout(()=>el.classList.remove('reveal'),4200);
+      },14000);
+    },2500);
+  } else {
+    clearInterval(window._sinuRepeat);
+  }
   // Fire advanced glitch on logo briefly
   const logo=document.querySelector('.boot-logo');
   if(logo){logo.classList.add('firing');setTimeout(()=>logo.classList.remove('firing'),200);}
 }
 function carMove(dir){snd('select');carTo(cidx+dir);}
+
+/* ── Touch swipe for carousel ── */
+function initCarouselSwipe(){
+  const vp=document.getElementById('car-vp');
+  if(!vp)return;
+  let tx0=0,ty0=0,dragging=false;
+  vp.addEventListener('touchstart',e=>{
+    tx0=e.touches[0].clientX;ty0=e.touches[0].clientY;dragging=true;
+  },{passive:true});
+  vp.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    const dx=e.touches[0].clientX-tx0;
+    const dy=Math.abs(e.touches[0].clientY-ty0);
+    // Only prevent scroll if horizontal swipe is dominant
+    if(Math.abs(dx)>dy&&Math.abs(dx)>10)e.preventDefault();
+  },{passive:false});
+  vp.addEventListener('touchend',e=>{
+    if(!dragging)return;dragging=false;
+    const dx=e.changedTouches[0].clientX-tx0;
+    const dy=Math.abs(e.changedTouches[0].clientY-ty0);
+    if(Math.abs(dx)>40&&Math.abs(dx)>dy){
+      carMove(dx<0?1:-1);
+    }
+  },{passive:true});
+}
 function selChar(){
   snd('complete');
   S.cid=CHARS[cidx].id;if(!S.day)S.day=1;
@@ -1666,6 +2046,10 @@ function rworkout(){
   wsets={};exs.forEach((_,i)=>wsets[i]=new Set());
   const t=tod();doneTod=S.lastDate===t;
   const list=document.getElementById('wo-list');list.innerHTML='';
+
+  // Warm-up panel at the top
+  list.insertAdjacentHTML('beforeend', buildWarmup(S.cid));
+
   exs.forEach((ex,ei)=>{
     const bn=bmiNote(ex);const ns=parseInt(ex.s)||3;
     const d=document.createElement('div');d.className='ex-item';d.id='ei'+ei;
@@ -1673,6 +2057,7 @@ function rworkout(){
       <div class="ex-meta">${ex.s} SETS × ${ex.r}${ex.rest&&ex.rest!=='—'?' · REST '+ex.rest:''}</div>
       <div class="ex-note">${ex.note}</div>
       ${bn?`<div class="bmi-note">${bn}</div>`:''}
+      ${EX_VIDEOS[ex.n]?`<a class="ex-vid" href="${EX_VIDEOS[ex.n]}" target="_blank" rel="noopener">▶ WATCH FORM TUTORIAL</a>`:''}
       <div class="sets-row" id="sr${ei}">${Array.from({length:ns},(_,si)=>`<div class="sbox" onclick="tset(${ei},${si})">${si+1}</div>`).join('')}</div>`;
     // Tooltip wiring — desktop hover
     d.addEventListener('mouseenter',e=>showExTip(ex,c.name,e.clientX,e.clientY));
@@ -1715,12 +2100,12 @@ function completeWO(){
   const or=rank(S.xp-xpg),nr=rank(S.xp);
   if(or!==nr){
     snd('rankup');S.coins+=50;showToast(`⬆ RANK UP: ${nr} — ${RNAMES[nr]}! +50🪙`,4000);
-    // Violent shake
     document.body.classList.add('shaking');
     setTimeout(()=>document.body.classList.remove('shaking'),600);
-    // Advanced glitch on rank badge
     const rb=document.getElementById('d-rank');
     if(rb){rb.classList.add('glitch-adv','firing');rb.dataset.text=nr;setTimeout(()=>rb.classList.remove('firing'),400);}
+  } else {
+    showToast(`✓ PROTOCOL LOGGED — +${xpg}XP +10🪙`);
   }
   const c=gc(S.cid);const ph=phase(S.day);
   S.log.unshift({date:t,day:S.day,cid:S.cid,cname:c.name,ph,xp:xpg});
@@ -1912,6 +2297,7 @@ function rprofile(){
     {v:`Day ${S.day}/90`,l:'PROGRESS'},{v:S.bmi||'—',l:'BMI'},
     {v:(S.name||'PLAYER').toUpperCase(),l:'CALLSIGN'},{v:S.w?`${S.w}kg · ${S.h}cm`:'—',l:'METRICS'},
   ].map(s=>`<div class="pcard card"><div class="pv">${s.v}</div><div class="pl">${s.l}</div></div>`).join('');
+  rprofileExtra();
 }
 function doReset(){
   document.getElementById('confirm-modal').classList.add('open');
@@ -2118,6 +2504,15 @@ const NOVO_SCREEN={
   profile:["Rank is a consequence of consistency. Keep going.",
            "Your metrics are in the system. The system does not forget.",
            "E to S+ is a 90-day journey. You are on it."],
+  journal:["Write honestly. I read everything logged here.",
+           "The prompt was chosen for where you are in the protocol. Answer it specifically.",
+           "Every entry here becomes part of your transformation record."],
+  measurements:["The scale lies. Centimeters don't.",
+                "Log your baseline today. The comparison in 4 weeks will be striking.",
+                "Track consistently — same time, same conditions. That's the data that matters."],
+  restday:["Rest is when your body builds what training demanded.",
+           "The protocol loaded here is a training session. Follow it.",
+           "Active recovery today means better output tomorrow."],
 };
 
 const NOVO_IDLE=[
@@ -2141,12 +2536,15 @@ function novaSay(text,ms=5500){
 
 function novoScreen(screenId){
   if(!S.cid)return;
-  const char=gc(S.cid);
-  // 50% chance show character line, 50% show screen line
+  // Mentor mode gets extended, character-agnostic coaching lines
+  if(S.mentorMode&&MENTOR_LINES[screenId]){
+    const pool=MENTOR_LINES[screenId];
+    setTimeout(()=>novaSay(pool[Math.floor(Math.random()*pool.length)],9000),800);
+    return;
+  }
   const useChar=Math.random()>.45;
-  const pool=useChar?(NOVO_CHAR[S.cid]||NOVO_SCREEN[screenId]||[]):( NOVO_SCREEN[screenId]||[]);
+  const pool=useChar?(NOVO_CHAR[S.cid]||NOVO_SCREEN[screenId]||[]):(NOVO_SCREEN[screenId]||[]);
   if(!pool.length)return;
-  // delay slightly so wipe finishes first
   setTimeout(()=>novaSay(pool[Math.floor(Math.random()*pool.length)]),800);
 }
 
@@ -2260,6 +2658,8 @@ document.addEventListener('mousemove',e=>{
    PARTICLE NETWORK BACKGROUND CANVAS
 ════════════════════════════════════════ */
 function initBgCanvas(){
+  // Skip on mobile — too much CPU/battery drain
+  if(window.matchMedia('(hover:none)').matches)return;
   const canvas=document.getElementById('bg-canvas');
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
@@ -2324,6 +2724,8 @@ function initBgCanvas(){
    CURSOR TRAIL CANVAS
 ════════════════════════════════════════ */
 function initTrailCanvas(){
+  // Skip on touch devices — mousemove doesn't fire reliably on mobile
+  if(window.matchMedia('(hover:none)').matches)return;
   const canvas=document.getElementById('trail-canvas');
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
@@ -2366,9 +2768,329 @@ function applyFlicker(){
 }
 
 /* ════════════════════════════════════════
+   WARM-UP PROTOCOLS
+════════════════════════════════════════ */
+const WARMUPS={
+  gun:   [{m:'Neck Rolls',d:'30s each way'},{m:'Shoulder Circles',d:'20 reps'},{m:'Hip Circles',d:'20 reps each'},{m:'Deep Squat Hold',d:'60s'},{m:'Arm Swings',d:'30s'},{m:'Wrist Rotations',d:'20 reps'}],
+  daniel:[{m:"Hip 90/90 Stretch",d:'60s each side'},{m:"World's Greatest Stretch",d:'5 reps each'},{m:'Shoulder Pass-Through',d:'10 reps'},{m:'Cossack Squat',d:'8 reps each'},{m:'Dynamic Leg Swing',d:'15 each direction'},{m:'Shadowboxing (easy)',d:'2 min'}],
+  samuel:[{m:'Band Pull-Apart',d:'25 reps'},{m:'Shoulder Dislocate',d:'10 reps'},{m:'Cat-Cow Stretch',d:'10 reps'},{m:'Chest Opener Stretch',d:'30s hold'},{m:'Light Pushup',d:'15 reps'},{m:'Thoracic Rotation',d:'10 each side'}],
+  vasco: [{m:'Jump Rope (easy)',d:'2 min'},{m:'Hip Flexor Lunge Stretch',d:'30s each'},{m:'Leg Swing (front/back)',d:'15 each'},{m:'Ankle Circles',d:'20 each'},{m:'Muay Thai Shadow (50%)',d:'2 min'},{m:'Calf Raise',d:'20 reps'}],
+  jake:  [{m:'Hip 90/90 Mobility',d:'60s each side'},{m:'Glute Bridge',d:'15 reps'},{m:'Thoracic Spine Rotation',d:'10 each'},{m:'Hip Escape Shrimping',d:'20 reps'},{m:'Shoulder Roll',d:'20 reps'},{m:'Light Pull-Up',d:'5 reps'}],
+  johan: [{m:'Jump Rope (fast)',d:'90s'},{m:'Leg Swing (side to side)',d:'20 each'},{m:'High Knees (50%)',d:'30s'},{m:'Wrist Circles',d:'20 each'},{m:'Fast Shadowboxing',d:'60s'},{m:'Ankle Bounces',d:'30s'}],
+  zack:  [{m:'Jump Rope (rhythm)',d:'3 min'},{m:'Shoulder Circles (big)',d:'20 each'},{m:'Neck Isometric',d:'15s each direction'},{m:'Hip Flexor Stretch',d:'30s each'},{m:'Light Jab-Cross',d:'30 reps'},{m:'Wrist Stretch',d:'30s each'}],
+  goo:   [{m:'Wrist Flexor Stretch',d:'30s each'},{m:'Shoulder Dislocate',d:'10 reps'},{m:'Hip Circle',d:'20 reps'},{m:'Finger Extension Stretch',d:'20 reps'},{m:'Single-Leg Balance',d:'30s each'},{m:'Stick Swing (light)',d:'1 min'}],
+  eli:   [{m:'Cat-Cow',d:'10 reps'},{m:'Cossack Squat',d:'8 each'},{m:'Bear Crawl (slow)',d:'20m'},{m:'Hip 90/90',d:'60s each'},{m:'Thoracic Rotation',d:'10 each'},{m:'Spiderman Stretch',d:'5 each side'}],
+  sinu:  [{m:'High Knees (build to fast)',d:'60s'},{m:'Lateral Shuffle (slow)',d:'30s'},{m:'Single-Leg Balance',d:'30s each'},{m:'Ankle Circles',d:'20 each'},{m:'Dynamic Hamstring Sweep',d:'10 each'},{m:'Shadowbox (blind side)',d:'60s'}],
+};
+function buildWarmup(charId){
+  const moves=WARMUPS[charId]||WARMUPS.daniel;
+  return `<div class="warmup-panel">
+    <div class="warmup-toggle" onclick="toggleWarmup(this)">
+      <span class="warmup-title">◈ WARM-UP PROTOCOL</span>
+      <span class="warmup-badge">TAP TO EXPAND · 5–6 MIN</span>
+    </div>
+    <div class="warmup-body">
+      ${moves.map(m=>`<div class="warmup-item"><span class="warmup-move">${m.m}</span><span class="warmup-dur">${m.d}</span></div>`).join('')}
+      <div style="font-size:.72rem;color:var(--dim);margin-top:8px;font-style:italic">Complete all movements before starting your main protocol.</div>
+    </div>
+  </div>`;
+}
+function toggleWarmup(el){
+  const body=el.nextElementSibling;
+  body.classList.toggle('open');
+  el.querySelector('.warmup-badge').textContent=body.classList.contains('open')?'COLLAPSE':'TAP TO EXPAND · 5–6 MIN';
+}
+
+/* ════════════════════════════════════════
+   VIDEO REFERENCE LIBRARY
+════════════════════════════════════════ */
+const EX_VIDEOS={
+  'Barbell Back Squat':'https://www.youtube.com/results?search_query=barbell+squat+form+tutorial',
+  'Conventional Deadlift':'https://www.youtube.com/results?search_query=deadlift+form+tutorial',
+  'Pull-Up':'https://www.youtube.com/results?search_query=pull+up+form+tutorial',
+  'Romanian Deadlift':'https://www.youtube.com/results?search_query=romanian+deadlift+tutorial',
+  'Bench Press':'https://www.youtube.com/results?search_query=bench+press+form+tutorial',
+  'Overhead Press':'https://www.youtube.com/results?search_query=overhead+press+form+tutorial',
+  'Barbell Row':'https://www.youtube.com/results?search_query=barbell+row+form+tutorial',
+  'Box Jump':'https://www.youtube.com/results?search_query=box+jump+tutorial',
+  'Turkish Get-Up':'https://www.youtube.com/results?search_query=turkish+get+up+tutorial',
+  'Power Clean':'https://www.youtube.com/results?search_query=power+clean+form+tutorial',
+  'Hang Power Clean':'https://www.youtube.com/results?search_query=hang+power+clean+tutorial',
+  'Muscle-Up':'https://www.youtube.com/results?search_query=muscle+up+tutorial',
+  'Dragon Flag':'https://www.youtube.com/results?search_query=dragon+flag+tutorial',
+  'Pistol Squat':'https://www.youtube.com/results?search_query=pistol+squat+tutorial',
+  'Handstand Pushup':'https://www.youtube.com/results?search_query=handstand+pushup+tutorial',
+  'Ab Wheel':'https://www.youtube.com/results?search_query=ab+wheel+rollout+tutorial',
+  'Hip Thrust':'https://www.youtube.com/results?search_query=hip+thrust+form+tutorial',
+  'Hang Snatch':'https://www.youtube.com/results?search_query=hang+snatch+tutorial',
+  'Hang Power Snatch':'https://www.youtube.com/results?search_query=hang+snatch+tutorial',
+  'Single-Leg RDL':'https://www.youtube.com/results?search_query=single+leg+rdl+tutorial',
+  'Weighted Dip':'https://www.youtube.com/results?search_query=weighted+dip+form',
+  'Hip Escape Shrimping':'https://www.youtube.com/results?search_query=bjj+hip+escape+shrimping+tutorial',
+  'Bear Crawl':'https://www.youtube.com/results?search_query=bear+crawl+form+exercise',
+  'Knuckle Pushups':'https://www.youtube.com/results?search_query=knuckle+pushups+conditioning',
+  'Wrestler Bridge':'https://www.youtube.com/results?search_query=wrestler+bridge+neck+exercise',
+  'Push Press':'https://www.youtube.com/results?search_query=push+press+form+tutorial',
+  'Farmer Carry':'https://www.youtube.com/results?search_query=farmers+walk+tutorial',
+};
+
+/* ════════════════════════════════════════
+   PROGRESS JOURNAL
+════════════════════════════════════════ */
+const JOURNAL_QUESTIONS=[
+  'How does your body feel compared to Day 1? What\'s the most noticeable physical change?',
+  'What was your hardest workout this week? What made it hard?',
+  'Where are you feeling the most soreness or strength? What does that tell you?',
+  'Rate your energy this week 1–10. What\'s affecting it most?',
+  'What part of your protocol felt easiest? Is that telling you something?',
+  'Have you noticed any changes in how you move, sit, or carry yourself?',
+  'What would you tell your Day 1 self about this week?',
+  'Where is your mental strength being tested the most right now?',
+  'What do you want to focus on improving in the next 7 days?',
+  'One word to describe this week. Explain it.',
+  'What habit has been hardest to maintain? What\'s the obstacle?',
+  'How is your sleep affecting your training this week?',
+  'Is there a moment from this week\'s training you\'re proud of? Describe it.',
+];
+let _journalMood='';
+function rjournal(){
+  const weekNum=Math.max(1,Math.ceil((S.day||1)/7));
+  const today=tod();
+  const alreadyToday=S.journal?.some(e=>e.date===today);
+  const q=JOURNAL_QUESTIONS[(weekNum-1)%JOURNAL_QUESTIONS.length];
+  const pa=document.getElementById('journal-prompt-area');
+  if(pa){
+    if(alreadyToday){
+      pa.innerHTML=`<div class="week-badge">WEEK ${weekNum}</div>
+        <div style="padding:14px;background:rgba(0,212,170,.06);border:1px solid rgba(0,212,170,.2);border-radius:12px;margin-bottom:18px;font-size:.85rem;color:var(--dim)">
+          ✓ Entry logged today. Come back tomorrow.
+        </div>`;
+    } else {
+      _journalMood='';
+      pa.innerHTML=`<div class="week-badge">WEEK ${weekNum} — DAY ${S.day}</div>
+        <div class="journal-prompt">
+          <div class="jp-label">WEEKLY PROMPT</div>
+          <div class="jp-q">${q}</div>
+          <div class="jp-label" style="margin-bottom:8px">HOW ARE YOU FEELING?</div>
+          <div class="mood-select" id="mood-row">
+            ${'💪 Strong,😤 Grinding,🔥 On Fire,😴 Drained,🤕 Beat Up,⚡ Electric'.split(',').map(m=>`<button class="mood-btn" onclick="selectMood(this,'${m}')">${m}</button>`).join('')}
+          </div>
+          <div class="jp-label" style="margin-bottom:8px">YOUR ENTRY</div>
+          <textarea id="j-text" placeholder="Write freely. The system is listening..." style="width:100%;min-height:120px;padding:12px;background:rgba(0,0,0,.3);color:var(--bright);border:1px solid var(--border);border-radius:10px;font-family:var(--fb);font-size:.9rem;outline:none;resize:vertical;line-height:1.6"></textarea>
+          <button class="btn btn-p" onclick="saveJournal()" style="margin-top:12px;font-family:var(--fs);font-size:.68rem;letter-spacing:2px">SAVE ENTRY →</button>
+        </div>`;
+    }
+  }
+  const el=document.getElementById('journal-entries');
+  if(!el)return;
+  const entries=(S.journal||[]).slice().reverse();
+  if(!entries.length){el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--muted);font-size:.85rem">No entries yet. Your first log starts here.</div>`;return;}
+  el.innerHTML=entries.map(e=>`<div class="journal-entry">
+    <div class="je-week">${e.weekLabel||'WEEK 1'}</div>
+    <div class="je-date">${e.date} · Day ${e.day}</div>
+    <div class="je-text">${e.text.replace(/</g,'&lt;')}</div>
+    ${e.mood?`<div class="je-mood"><span class="je-tag">${e.mood}</span></div>`:''}
+  </div>`).join('');
+}
+function selectMood(btn,mood){
+  _journalMood=mood;
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');snd('hover');
+}
+function saveJournal(){
+  const text=(document.getElementById('j-text')?.value||'').trim();
+  if(!text){showToast('⚠ WRITE SOMETHING FIRST');return;}
+  const weekNum=Math.max(1,Math.ceil((S.day||1)/7));
+  if(!S.journal)S.journal=[];
+  S.journal.unshift({date:tod(),day:S.day,weekLabel:`WEEK ${weekNum}`,text,mood:_journalMood});
+  if(S.journal.length>90)S.journal=S.journal.slice(0,90);
+  save();snd('complete');showToast('✓ JOURNAL ENTRY SAVED');
+  setTimeout(()=>novaSay(S.mentorMode?`Week ${weekNum} entry logged. The system is building a picture of your progression. Keep writing.`:`Entry logged. Week ${weekNum} documented.`,5500),800);
+  rjournal();
+}
+
+/* ════════════════════════════════════════
+   BODY MEASUREMENTS
+════════════════════════════════════════ */
+const MFIELDS=[{id:'chest',lbl:'CHEST'},{id:'waist',lbl:'WAIST'},{id:'arm',lbl:'ARM'},{id:'thigh',lbl:'THIGH'},{id:'weight',lbl:'WEIGHT',unit:'kg'}];
+function rmeasurements(){
+  const entries=S.measurements||[];
+  const latest=entries[0]||{};const prev=entries[1]||{};
+  const grid=document.getElementById('meas-display');
+  if(grid){
+    grid.innerHTML=MFIELDS.map(f=>{
+      const cur=latest[f.id],prv=prev[f.id];
+      let delta='',dCls='neu';
+      if(cur&&prv){
+        const d=parseFloat((cur-prv).toFixed(1));
+        const shrinkGood=f.id==='waist';
+        delta=d>0?`+${d}${f.unit||'cm'} ↑`:d<0?`${d}${f.unit||'cm'} ↓`:'No change';
+        dCls=d===0?'neu':((d>0)!==shrinkGood)?'pos':'neg';
+      }
+      return `<div class="meas-card">
+        <div class="meas-lbl">${f.lbl}</div>
+        <div class="meas-cur">${cur||'—'}<span class="meas-unit"> ${f.unit||'cm'}</span></div>
+        ${delta?`<div class="meas-delta ${dCls}">${delta}</div>`:'<div class="meas-delta neu">No baseline yet</div>'}
+      </div>`;
+    }).join('');
+  }
+  const hist=document.getElementById('meas-history');
+  if(hist){
+    if(!entries.length){hist.innerHTML=`<div style="color:var(--muted);font-size:.85rem;padding:10px 0">No logs yet. Log your first baseline above to start tracking.</div>`;return;}
+    hist.innerHTML=entries.slice(0,10).map(e=>`<div class="mhist-row">
+      <div class="mhd">${e.date}</div>
+      <div class="mhv">${MFIELDS.filter(f=>e[f.id]).map(f=>`${f.lbl} ${e[f.id]}${f.unit||'cm'}`).join(' · ')}</div>
+    </div>`).join('');
+  }
+}
+function saveMeasurements(){
+  const entry={date:tod()};let hasAny=false;
+  MFIELDS.forEach(f=>{const v=parseFloat(document.getElementById('m-'+f.id)?.value);if(!isNaN(v)&&v>0){entry[f.id]=v;hasAny=true;}});
+  if(!hasAny){showToast('⚠ ENTER AT LEAST ONE MEASUREMENT');return;}
+  if(!S.measurements)S.measurements=[];
+  S.measurements.unshift(entry);
+  if(S.measurements.length>52)S.measurements=S.measurements.slice(0,52);
+  MFIELDS.forEach(f=>{const el=document.getElementById('m-'+f.id);if(el)el.value='';});
+  save();snd('complete');showToast('✓ MEASUREMENTS LOGGED');
+  setTimeout(()=>novaSay('Measurements recorded. Come back next week. The system tracks your physical transformation week to week.',5000),800);
+  rmeasurements();
+}
+
+/* ════════════════════════════════════════
+   REST DAY PROGRAMMING
+════════════════════════════════════════ */
+const REST_DATA={
+  gun:[
+    {cat:'MOBILITY',items:[
+      {icon:'🔄',n:'Hip 90/90 Sequence',d:'Full hip rotation targeting flexors and external rotators. Gun\'s power base demands constant upkeep.',t:'8 min'},
+      {icon:'🧘',n:'Thoracic Spine Opener',d:'Foam roll or broomstick behind the back. Open the mid-back that compresses under heavy load.',t:'5 min'},
+      {icon:'🤸',n:'Full Shoulder CARs',d:'Controlled articular rotations — full range of the shoulder joint under tension. Slow and deliberate.',t:'6 min'},
+    ]},
+    {cat:'RECOVERY',items:[
+      {icon:'🧊',n:'Contrast Shower Protocol',d:'3 min hot / 30s cold, repeated 3 cycles. Reduces systemic inflammation and improves circulation.',t:'15 min'},
+      {icon:'😴',n:'Sleep Priority',d:'8–9 hours minimum. Muscle density builds during deep sleep, not during the session. This IS the session.',t:'8–9 hours'},
+      {icon:'🍳',n:'High-Protein Recovery Meal',d:'Prioritize protein across all meals today. Muscle tissue repairs 24–48 hours post-training.',t:'All meals'},
+    ]},
+  ],
+  daniel:[
+    {cat:'MOBILITY',items:[
+      {icon:'🌊',n:'Systema Flow Sequence',d:'Slow deliberate ground-to-standing movements. Explore the full range of every joint without load.',t:'10 min'},
+      {icon:'🤸',n:'Cossack Squat Flow',d:'Lateral hip mobility work — directly impacts agility, footwork and change-of-direction speed.',t:'8 min'},
+      {icon:'🧘',n:'Spinal Decompression Hang',d:'Hang from a pull-up bar 2 min total. Let gravity decompress the vertebrae after loaded training.',t:'5 min'},
+    ]},
+    {cat:'RECOVERY',items:[
+      {icon:'🏃',n:'30-Minute Zone 1 Walk',d:'Low intensity. Active blood flow to fatigued muscles accelerates recovery without taxing the CNS.',t:'30 min'},
+      {icon:'🧠',n:'Movement Study',d:'Watch a martial arts technique breakdown. Daniel\'s Copy ability begins in the visual cortex.',t:'20 min'},
+      {icon:'🥗',n:'Anti-Inflammatory Nutrition',d:'Turmeric, omega-3 sources (sardines, tuna), and greens. Reduce systemic inflammation today.',t:'All meals'},
+    ]},
+  ],
+  vasco:[
+    {cat:'ACTIVE RECOVERY',items:[
+      {icon:'🏃',n:'5km Easy Run',d:'Zone 2 pace — you should be able to hold a conversation. Builds aerobic base without adding fatigue.',t:'25–35 min'},
+      {icon:'🦵',n:'Quad & Hip Flexor Stretch',d:'Muay Thai compresses the hip flexors severely. 2 minutes each side in a deep lunge hold.',t:'8 min'},
+      {icon:'🤸',n:'Cobra & Spinal Arch',d:'Counter the forward hunching that builds from heavy bag training. Open the anterior chain.',t:'5 min'},
+    ]},
+    {cat:'RECOVERY',items:[
+      {icon:'🍖',n:'Caloric Surplus Maintained',d:'Rest days are still build days for Vasco. Keep eating. The body is repairing right now.',t:'All meals'},
+      {icon:'😴',n:'9–10 Hours Sleep',d:"Vasco's training volume demands maximum recovery. Non-negotiable.",t:'9–10 hours'},
+      {icon:'🧊',n:'Contrast Shower',d:'3 cycles of 3 min hot / 30s cold. Prioritize the legs and lower body today.',t:'12 min'},
+    ]},
+  ],
+  jake:[
+    {cat:'GRAPPLING MOBILITY',items:[
+      {icon:'🔄',n:'Full Hip Mobility Circuit',d:'90/90, pigeon, and frog stretch sequence. A grappler\'s hips are their engine.',t:'10 min'},
+      {icon:'🧘',n:'Spinal Decompression',d:'Hang from bar for 2 min. Decompress after the compression of grappling.',t:'5 min'},
+      {icon:'🤸',n:'Shoulder External Rotation',d:'Band or bodyweight external rotation work. Protects the labrum during shooting and clinching.',t:'6 min'},
+    ]},
+    {cat:'RECOVERY',items:[
+      {icon:'🏃',n:'20-Minute Easy Walk',d:'Zone 1 active recovery. Moves blood without taxing the CNS.',t:'20 min'},
+      {icon:'😴',n:'8+ Hours Sleep',d:'Athletic adaptation happens in sleep. Protect it like a training session.',t:'8+ hours'},
+      {icon:'🍗',n:'Moderate Protein Day',d:'Eat well. You do not need to overfeed on rest days — just maintain.',t:'All meals'},
+    ]},
+  ],
+  default:[
+    {cat:'MOBILITY',items:[
+      {icon:'🔄',n:'Full Joint Circuit',d:'10 minutes of systematic joint rotations from neck down to ankles. Every joint, full range.',t:'10 min'},
+      {icon:'🤸',n:'Dynamic Stretching Flow',d:'Hip flexors, hamstrings, thoracic spine, shoulders. The muscles worked hardest this week.',t:'8 min'},
+      {icon:'🧘',n:'4-7-8 Breathing',d:'Inhale 4 counts, hold 7, exhale 8. Activates the parasympathetic system and accelerates recovery.',t:'5 min'},
+    ]},
+    {cat:'RECOVERY',items:[
+      {icon:'🏃',n:'20–30 Min Easy Walk',d:'Zone 1 active recovery. Gets blood to muscles without taxing them further.',t:'20–30 min'},
+      {icon:'😴',n:'Sleep 8+ Hours',d:'Everything you earned this week consolidates during deep sleep. Protect it at all costs.',t:'8+ hours'},
+      {icon:'🍳',n:'Recovery Nutrition',d:'High protein, anti-inflammatory foods. Your body is doing the real work today.',t:'All meals'},
+    ]},
+  ],
+};
+function rrestday(){
+  const el=document.getElementById('restday-root');if(!el)return;
+  const c=S.cid?gc(S.cid):null;
+  const prog=REST_DATA[S.cid]||REST_DATA.default;
+  el.innerHTML=`<div class="lbl">REST DAY PROTOCOL</div>
+  <div class="sys" style="font-size:1.2rem;margin:5px 0 14px">Active Recovery</div>
+  <div class="rest-hero">
+    <div style="font-size:3rem;margin-bottom:10px">🌙</div>
+    <div style="font-family:var(--fs);font-size:.75rem;letter-spacing:2px;color:var(--bright);margin-bottom:8px">${c?c.name.toUpperCase()+' ':'' }REST DAY PROTOCOL</div>
+    <div style="font-size:.84rem;color:var(--dim);line-height:1.65">Rest is not a gap in your training. It is when your body builds what the sessions demanded. Follow this protocol and you arrive tomorrow stronger than if you had trained through it.</div>
+  </div>
+  ${prog.map(section=>`
+    <div class="rest-cat-title">${section.cat}</div>
+    ${section.items.map(item=>`<div class="rest-item">
+      <div class="ri-icon">${item.icon}</div>
+      <div style="flex:1">
+        <div class="ri-name">${item.n}</div>
+        <div class="ri-desc">${item.d}</div>
+        <div class="ri-time">⏱ ${item.t}</div>
+      </div>
+    </div>`).join('')}
+  `).join('')}
+  <div style="height:16px"></div>`;
+}
+
+/* ════════════════════════════════════════
+   MENTOR MODE
+════════════════════════════════════════ */
+const MENTOR_LINES={
+  dashboard:[
+    "Status window open. I'm tracking your streak, XP velocity, and whether your rest and training days are balanced. If anything falls out of alignment, I'll flag it before it becomes a problem.",
+    "Day count is a real asset. Every protocol you complete is compounding. Research on habit formation puts the real threshold at 66 days, not 21. You're building toward that.",
+  ],
+  workout:[
+    "Before you begin — the warm-up is loaded above. Do not skip it. Cold tissue under load is exactly how 90-day runs end early. Three minutes of warm-up costs you nothing.",
+    "On your heavy sets: the difference between progress and plateau is whether the last 2 reps are pushed to technical failure. That's where adaptation happens. Don't leave early.",
+  ],
+  journal:[
+    "The journal is underused by most people. What you write here builds a longitudinal record — energy patterns, mental shifts, strength peaks. Write honestly. The system has no judgment.",
+    "Today's question was chosen for where you are in the 90-day protocol. Answer it specifically, not generally. Vague entries give you vague insight.",
+  ],
+  measurements:[
+    "Body measurements reveal what weight cannot. A 2cm arm increase and 1cm waist decrease at the same bodyweight is a significant transformation. The scale is the worst metric you have.",
+    "Log consistently — same time of day, same conditions. Morning before eating gives the cleanest baseline. Consistency in measurement reveals truth.",
+  ],
+  restday:[
+    "Rest day does not mean nothing. Your body is rebuilding right now. The protocol loaded here will accelerate that process. Mobility and sleep are two of the most underused performance tools.",
+    "The athletes who recover best are the ones who train best long-term. This session matters as much as yesterday's sets.",
+  ],
+};
+function toggleMentor(){
+  S.mentorMode=!S.mentorMode;save();
+  const tog=document.getElementById('mentor-tog');
+  const card=document.getElementById('mentor-card');
+  if(tog)tog.classList.toggle('on',S.mentorMode);
+  if(card)card.classList.toggle('show',S.mentorMode);
+  snd(S.mentorMode?'complete':'click');
+  showToast(S.mentorMode?'🤖 MENTOR MODE ACTIVE':'MENTOR MODE OFF');
+  if(S.mentorMode)setTimeout(()=>novaSay("Mentor Mode engaged. I'll be more present from here on. Every session, I'm with you.",7000),800);
+}
+function rprofileExtra(){
+  const tog=document.getElementById('mentor-tog');
+  const card=document.getElementById('mentor-card');
+  if(tog)tog.classList.toggle('on',S.mentorMode);
+  if(card)card.classList.toggle('show',S.mentorMode);
+}
+
+/* ════════════════════════════════════════
    TRAVEL MODE
 ════════════════════════════════════════ */
-let _selectedTravelDays=null;
 
 function openTravelModal(){
   if(S.travel){
@@ -2449,6 +3171,34 @@ function renderTravelBanner(){
     <button class="tb-end" onclick="endTravelMode()">END</button>
   </div>`;
   if(btn){btn.textContent='✈ TRAVEL MODE — Tap to end and restore gym protocol';btn.style.borderColor='rgba(245,158,11,.6)';btn.style.color='var(--gold)';}
+}
+
+/* ── Global swipe navigation for main screens on mobile ── */
+function initScreenSwipe(){
+  if(!window.matchMedia('(hover:none)').matches)return;
+  const SWIPE_SCREENS=['dashboard','workout','nutrition','history','store','journal','measurements','restday'];
+  let sx=0,sy=0;
+  document.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    const activeScreen=document.querySelector('.screen.active');
+    if(!activeScreen)return;
+    const sid=activeScreen.id.replace('sc-','');
+    const idx=SWIPE_SCREENS.indexOf(sid);
+    if(idx===-1)return;
+    // Don't fire inside carousel, modals, or scrollable content that has scrolled
+    if(e.target.closest('#car-vp,#confirm-modal,#travel-modal'))return;
+    // Don't fire if the target element itself is scrollable and has scroll position
+    const scrollable=e.target.closest('.sc-content,.wo-list');
+    if(scrollable&&scrollable.scrollTop>10)return;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=Math.abs(e.changedTouches[0].clientY-sy);
+    // Require clearly horizontal gesture: dx dominant AND sufficient distance
+    if(Math.abs(dx)<70||dy>Math.abs(dx)*0.5)return;
+    const next=dx<0?idx+1:idx-1;
+    if(next>=0&&next<SWIPE_SCREENS.length)nav(SWIPE_SCREENS[next]);
+  },{passive:true});
 }
 
 window.addEventListener('load',boot);
